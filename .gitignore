@@ -39,3 +39,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Service Account & Credentials
+service-account.json
+*.pem
+*.key
+
+# Legacy & Backup
+legacy_backup/
+backup/
+*.backup
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
