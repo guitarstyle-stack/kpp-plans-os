@@ -64,7 +64,7 @@ export default function ReportsClient() {
             const year = date.getFullYear();
             const fiscalYearAD = month >= 10 ? year + 1 : year;
             return (fiscalYearAD + 543).toString();
-        } catch (e) {
+        } catch {
             return null;
         }
     };

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAllUsers } from '@/lib/userDataService';
 import { getSession } from '@/lib/auth';
 
@@ -13,7 +13,7 @@ export async function GET() {
     try {
         const users = await getAllUsers();
         return NextResponse.json(users);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
     }
 }

@@ -3,6 +3,11 @@ import { getSession } from '@/lib/auth';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import AuditLogsClient from '@/components/AuditLogsClient';
 
+interface UserSession {
+    role: string;
+    [key: string]: unknown;
+}
+
 export default async function AuditLogsPage() {
     const session = await getSession();
 
@@ -10,12 +15,12 @@ export default async function AuditLogsPage() {
         redirect('/');
     }
 
-    if (session.role !== 'admin') {
+    if ((session as unknown as UserSession).role !== 'admin') {
         redirect('/dashboard');
     }
 
     return (
-        <SidebarLayout user={session} activePage="audit-logs">
+        <SidebarLayout user={session as unknown as UserSession} activePage="audit-logs">
             <div className="p-8">
                 <AuditLogsClient />
             </div>

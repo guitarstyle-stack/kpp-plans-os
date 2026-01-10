@@ -15,6 +15,13 @@ export interface User {
     _rowIndex?: number;
 }
 
+export interface UserSession {
+    userId: string;
+    displayName: string;
+    pictureUrl: string;
+    role: string;
+}
+
 export interface Project {
     id: string;
     name: string; // Keep for backward compatibility
@@ -37,4 +44,27 @@ export interface Project {
 export interface Department {
     id: string;
     name: string;
+}
+
+export interface Indicator {
+    id: string;
+    projectId: string;
+    name: string;
+    target: string;
+    unit: string;
+    result?: string;
+    _rowIndex?: number;
+}
+
+export interface ProjectReport {
+    id: string;
+    projectId: string;
+    userId: string;
+    submissionDate: string;
+    progress: number;
+    budgetSpent: number;
+    performance: string;
+    issues: string;
+    indicatorResults: Record<string, string>; // JSON stringified in Sheet
+    _rowIndex?: number;
 }

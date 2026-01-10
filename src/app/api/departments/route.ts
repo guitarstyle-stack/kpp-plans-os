@@ -4,6 +4,12 @@ import { getSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// Helper type for session - defining locally as quick fix, better to import shared type
+interface UserSession {
+    role: string;
+    [key: string]: unknown;
+}
+
 export async function GET() {
     const session = await getSession();
     if (!session) {
@@ -13,14 +19,14 @@ export async function GET() {
     try {
         const departments = await getDepartments();
         return NextResponse.json(departments);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch departments' }, { status: 500 });
     }
 }
 
 export async function POST(req: NextRequest) {
     const session = await getSession();
-    if (!session || (session as any).role !== 'admin') {
+    if (!session || (session as unknown as UserSession).role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -28,14 +34,14 @@ export async function POST(req: NextRequest) {
         const { name } = await req.json();
         const result = await addDepartment(name);
         return NextResponse.json(result);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to create department' }, { status: 500 });
     }
 }
 
 export async function PUT(req: NextRequest) {
     const session = await getSession();
-    if (!session || (session as any).role !== 'admin') {
+    if (!session || (session as unknown as UserSession).role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -43,14 +49,14 @@ export async function PUT(req: NextRequest) {
         const { id, name } = await req.json();
         const result = await updateDepartment(id, name);
         return NextResponse.json(result);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to update department' }, { status: 500 });
     }
 }
 
 export async function DELETE(req: NextRequest) {
     const session = await getSession();
-    if (!session || (session as any).role !== 'admin') {
+    if (!session || (session as unknown as UserSession).role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -72,7 +78,7 @@ export async function DELETE(req: NextRequest) {
 
         await deleteDepartment(id);
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to delete department' }, { status: 500 });
     }
 }

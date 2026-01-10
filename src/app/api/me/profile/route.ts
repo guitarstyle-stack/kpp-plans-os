@@ -32,8 +32,9 @@ export async function PUT(req: NextRequest) {
 
         const updatedUser = await updateUserProfile(session.userId, allowedUpdates);
         return NextResponse.json(updatedUser);
-    } catch (error: any) {
+    } catch (error) {
         console.error('Update Profile Error:', error);
-        return NextResponse.json({ error: error.message || 'Failed to update profile' }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Failed to update profile';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

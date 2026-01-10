@@ -41,7 +41,7 @@ export async function logAudit(
                     headersList.get('x-real-ip') ||
                     headersList.get('cf-connecting-ip') ||
                     'unknown';
-            } catch (e) {
+            } catch {
                 // If headers() fails (e.g., not in a server component context), use 'server'
                 clientIp = 'server';
             }

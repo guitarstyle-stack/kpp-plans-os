@@ -19,7 +19,6 @@ export default function ProfileClient({ user }: { user: User }) {
 
     const [departments, setDepartments] = useState<Department[]>([]);
     const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState('');
 
     useEffect(() => {
         // Fetch departments for dropdown
@@ -43,6 +42,7 @@ export default function ProfileClient({ user }: { user: User }) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSaving(true);
 
         const promise = fetch('/api/me/profile', {
             method: 'PUT',
@@ -55,7 +55,7 @@ export default function ProfileClient({ user }: { user: User }) {
             };
             router.refresh(); // Refresh server components to update session/data
             return res.json();
-        });
+        }).finally(() => setSaving(false));
 
         toast.promise(promise, {
             loading: 'กำลังบันทึกข้อมูล...',
@@ -68,14 +68,11 @@ export default function ProfileClient({ user }: { user: User }) {
         <div className="bg-white shadow-sm border border-gray-100 rounded-2xl overflow-hidden p-8 max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-gray-900 font-display mb-6">แก้ไขข้อมูลส่วนตัว</h2>
 
-            {message && (
-                <div className={`mb-6 p-4 rounded-lg text-sm ${message.includes('สำเร็จ') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                    {message}
-                </div>
-            )}
+
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="flex items-center space-x-6 mb-6">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={user.picture_url}
                         alt="Profile"

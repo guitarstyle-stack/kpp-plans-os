@@ -212,6 +212,7 @@ export default function UserManagementClient() {
                             <tr key={user.line_user_id} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         {user.picture_url && <img className="h-8 w-8 rounded-full mr-3" src={user.picture_url} alt="" />}
                                         <div>
                                             <div className="text-sm font-medium text-gray-900">{user.display_name}</div>

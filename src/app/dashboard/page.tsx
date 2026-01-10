@@ -5,16 +5,13 @@ import DashboardClient from '@/components/DashboardClient';
 
 import { getUser } from '@/lib/userDataService';
 
-interface UserSession {
-    userId: string;
-    displayName: string;
-    pictureUrl: string;
-    role: string;
-}
+import { Project, UserSession } from '@/lib/types';
 
 import { getDepartmentById } from '@/lib/departmentService';
 
 // ... (existing imports)
+
+
 
 export default async function DashboardPage() {
     const sessionData = await getSession();
@@ -25,7 +22,7 @@ export default async function DashboardPage() {
     }
 
     // Server-side fetch for initial data
-    let projects: any[] = [];
+    let projects: Project[] = [];
     let user = null;
 
     try {
@@ -35,16 +32,17 @@ export default async function DashboardPage() {
         ]);
 
         user = userData;
+        const typedProjects = allProjects as unknown as Project[];
 
         // Filter projects based on role
         if (user?.role === 'admin' || session.role === 'admin') {
-            projects = allProjects;
+            projects = typedProjects;
         } else {
             // Non-admin: Filter by department
             if (user?.department_id) {
                 const department = await getDepartmentById(user.department_id);
                 if (department) {
-                    projects = allProjects.filter(p => p.agency === department.name);
+                    projects = typedProjects.filter(p => p.agency === department.name);
                 }
             }
         }
@@ -53,8 +51,18 @@ export default async function DashboardPage() {
         console.error('Failed to fetch data server-side:', error);
     }
 
-    // Fallback to session data if DB fetch fails, but preferably use DB data
-    const userProp = user || session;
+    // Map User or Session to UserSession expected by client
+    const userProp: UserSession = user ? {
+        userId: user.id || session.userId,
+        displayName: user.display_name || session.displayName,
+        pictureUrl: user.picture_url || session.pictureUrl,
+        role: user.role || session.role,
+    } : {
+        userId: session.userId,
+        displayName: session.displayName,
+        pictureUrl: session.pictureUrl,
+        role: session.role
+    };
 
     return <DashboardClient initialProjects={projects} user={userProp} />;
 }

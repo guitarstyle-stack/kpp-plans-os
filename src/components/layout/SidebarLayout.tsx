@@ -210,6 +210,7 @@ export default function SidebarLayout({ children, user, extraSidebarContent, top
                     <div className="border-t border-gray-200 p-4">
                         <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
                             {(user.pictureUrl || user.picture_url) ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img className="h-9 w-9 rounded-full bg-gray-300 object-cover ring-2 ring-white shadow-md" src={user.pictureUrl || user.picture_url} alt="" />
                             ) : (
                                 <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-md">

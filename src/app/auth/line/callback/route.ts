@@ -67,8 +67,11 @@ export async function GET(req: NextRequest) {
         });
 
         return response;
-    } catch (error: any) {
-        console.error('Line Login Error:', error.response?.data || error.message);
+        return response;
+    } catch (error: unknown) {
+        const err = error as { response?: { data?: unknown }, message?: string };
+        const errorMessage = err?.response?.data ? JSON.stringify(err.response.data) : (err.message || 'Unknown error');
+        console.error('Line Login Error:', errorMessage);
         return NextResponse.json({ error: 'Login failed' }, { status: 500 });
     }
 }

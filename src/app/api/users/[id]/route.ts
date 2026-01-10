@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
     }
 }
@@ -48,7 +48,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
         await deleteUser(id);
         return NextResponse.json({ success: true });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message || 'Failed to delete user' }, { status: 500 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to delete user';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

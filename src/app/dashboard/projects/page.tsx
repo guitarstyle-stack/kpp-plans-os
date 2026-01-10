@@ -5,8 +5,15 @@ import { getDepartmentById } from '@/lib/departmentService';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import UserProjectsList from '@/components/UserProjectsList';
 
+interface UserSession {
+    userId: string;
+    role: string;
+    [key: string]: unknown;
+}
+
 export default async function UserProjectsPage() {
-    const session = await getSession();
+    const sessionData = await getSession();
+    const session = sessionData as unknown as UserSession;
 
     if (!session) {
         redirect('/');
@@ -27,7 +34,7 @@ export default async function UserProjectsPage() {
     }
 
     return (
-        <SidebarLayout user={session as any} activePage="projects">
+        <SidebarLayout user={session as unknown as UserSession} activePage="projects">
             <div className="p-8">
                 <UserProjectsList userDepartment={userDepartment} />
             </div>

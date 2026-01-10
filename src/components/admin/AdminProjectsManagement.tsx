@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Project } from '@/lib/types';
+import { Project, Indicator } from '@/lib/types';
 import toast from 'react-hot-toast';
 import Modal from '../ui/Modal';
 import ConfirmationModal from '../ui/ConfirmationModal';
@@ -20,6 +20,9 @@ export default function AdminProjectsManagement() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [formData, setFormData] = useState<Partial<Project>>({});
+
+    // Indicator State
+    const [indicators, setIndicators] = useState<Partial<Indicator>[]>([]);
 
     useEffect(() => {
         fetchData();
@@ -55,16 +58,31 @@ export default function AdminProjectsManagement() {
             end_date: '',
             status: 'Not Started',
             progress: '0',
-            fiscal_year: '',
+            fiscal_year: new Date().getFullYear() + 543 + '',
             responsible_person: '',
             description: ''
         });
+        setIndicators([]);
         setShowCreateModal(true);
     };
 
-    const handleEdit = (project: Project) => {
+    const handleEdit = async (project: Project) => {
         setSelectedProject(project);
         setFormData(project);
+        setIndicators([]); // Reset first
+
+        // Fetch indicators
+        try {
+            const res = await fetch(`/api/indicators?projectId=${project.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setIndicators(data);
+            }
+        } catch (error) {
+            console.error('Failed to load indicators:', error);
+            toast.error('ไม่สามารถโหลดตัวชี้วัดได้');
+        }
+
         setShowEditModal(true);
     };
 
@@ -73,8 +91,26 @@ export default function AdminProjectsManagement() {
         setShowDeleteModal(true);
     };
 
+    // Indicator Handlers
+    const addIndicatorRow = () => {
+        setIndicators([...indicators, { name: '', target: '', unit: '', id: '' }]);
+    };
+
+    const removeIndicatorRow = (index: number) => {
+        const newIndicators = [...indicators];
+        newIndicators.splice(index, 1);
+        setIndicators(newIndicators);
+    };
+
+    const updateIndicatorRow = (index: number, field: keyof Indicator, value: string) => {
+        const newIndicators = [...indicators];
+        newIndicators[index] = { ...newIndicators[index], [field]: value };
+        setIndicators(newIndicators);
+    };
+
     const submitCreate = async () => {
         try {
+            // 1. Create Project
             const res = await fetch('/api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -82,6 +118,20 @@ export default function AdminProjectsManagement() {
             });
 
             if (res.ok) {
+                const newProject = await res.json();
+
+                // 2. Create Indicators (if any)
+                if (indicators.length > 0) {
+                    await fetch('/api/indicators', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            projectId: newProject.id, // Use new ID
+                            indicators: indicators.filter(i => i.name) // Filter empty
+                        })
+                    });
+                }
+
                 toast.success('สร้างโครงการสำเร็จ');
                 setShowCreateModal(false);
                 fetchData();
@@ -96,6 +146,7 @@ export default function AdminProjectsManagement() {
 
     const submitEdit = async () => {
         try {
+            // 1. Update Project
             const res = await fetch('/api/projects', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -103,6 +154,16 @@ export default function AdminProjectsManagement() {
             });
 
             if (res.ok) {
+                // 2. Update Indicators
+                await fetch('/api/indicators', {
+                    method: 'POST', // Re-using POST for sync update strategy
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        projectId: selectedProject?.id,
+                        indicators: indicators.filter(i => i.name)
+                    })
+                });
+
                 toast.success('อัปเดตโครงการสำเร็จ');
                 setShowEditModal(false);
                 fetchData();
@@ -231,7 +292,8 @@ export default function AdminProjectsManagement() {
                     }}
                     title={showCreateModal ? 'สร้างโครงการใหม่' : 'แก้ไขโครงการ'}
                 >
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                        {/* Basic Info */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อโครงการ</label>
                             <input
@@ -254,14 +316,25 @@ export default function AdminProjectsManagement() {
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">งบประมาณ</label>
-                            <input
-                                type="text"
-                                value={formData.budget || ''}
-                                onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">งบประมาณ</label>
+                                <input
+                                    type="text"
+                                    value={formData.budget || ''}
+                                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">ปีงบประมาณ</label>
+                                <input
+                                    type="text"
+                                    value={formData.fiscal_year || ''}
+                                    onChange={(e) => setFormData({ ...formData, fiscal_year: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -284,16 +357,6 @@ export default function AdminProjectsManagement() {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">ปีงบประมาณ (พ.ศ.)</label>
-                            <input
-                                type="text"
-                                value={formData.fiscal_year || ''}
-                                onChange={(e) => setFormData({ ...formData, fiscal_year: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                placeholder="2568"
-                            />
-                        </div>
-                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">ผู้รับผิดชอบ</label>
                             <input
                                 type="text"
@@ -311,7 +374,73 @@ export default function AdminProjectsManagement() {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                             />
                         </div>
-                        <div className="flex justify-end gap-3 mt-6">
+
+                        {/* Indicators Section */}
+                        <div className="border-t pt-4 mt-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-medium text-gray-900">ตัวชี้วัด (KPIs)</h3>
+                                <button
+                                    type="button"
+                                    onClick={addIndicatorRow}
+                                    className="text-sm text-indigo-600 hover:text-indigo-900 flex items-center gap-1"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    เพิ่มตัวชี้วัด
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {indicators.map((ind, index) => (
+                                    <div key={index} className="flex gap-3 items-start">
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                placeholder="ชื่อตัวชี้วัด (เช่น จำนวนผู้เข้าร่วม)"
+                                                value={ind.name || ''}
+                                                onChange={(e) => updateIndicatorRow(index, 'name', e.target.value)}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                                            />
+                                        </div>
+                                        <div className="w-24">
+                                            <input
+                                                type="text"
+                                                placeholder="เป้าหมาย"
+                                                value={ind.target || ''}
+                                                onChange={(e) => updateIndicatorRow(index, 'target', e.target.value)}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                                            />
+                                        </div>
+                                        <div className="w-20">
+                                            <input
+                                                type="text"
+                                                placeholder="หน่วย"
+                                                value={ind.unit || ''}
+                                                onChange={(e) => updateIndicatorRow(index, 'unit', e.target.value)}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeIndicatorRow(index)}
+                                            className="p-2 text-gray-400 hover:text-red-600"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                {indicators.length === 0 && (
+                                    <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                        ยังไม่มีตัวชี้วัด คลิก &apos;เพิ่มตัวชี้วัด&apos; เพื่อกำหนดค่าเป้าหมาย
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
                             <button
                                 onClick={() => {
                                     setShowCreateModal(false);
@@ -325,7 +454,7 @@ export default function AdminProjectsManagement() {
                                 onClick={showCreateModal ? submitCreate : submitEdit}
                                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                             >
-                                {showCreateModal ? 'สร้าง' : 'บันทึก'}
+                                {showCreateModal ? 'สร้างโครงการ' : 'บันทึกการเปลี่ยนแปลง'}
                             </button>
                         </div>
                     </div>

@@ -73,7 +73,7 @@ export async function registerOrUpdateUser(profile: { userId: string; displayNam
         try {
             const { logAudit } = await import('./auditService');
             await logAudit(profile.userId, 'CREATE', profile.userId, 'New user registered via Line');
-        } catch (e) { console.error(e); }
+        } catch { console.error('Error logging audit'); }
 
         return {
             role: 'user',
@@ -112,7 +112,7 @@ export async function getAllUsers(): Promise<User[]> {
         department_id: row.get('department_id'),
         phone: row.get('phone'),
         email: row.get('email'),
-        _rowIndex: (row as any).rowIndex,
+        _rowIndex: (row as unknown as { rowIndex: number }).rowIndex,
     }));
 
     usersCache = users;
@@ -139,7 +139,7 @@ export async function updateUserRole(lineUserId: string, newRole: 'admin' | 'use
     try {
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'UPDATE', lineUserId, `Role changed to ${newRole}`);
-    } catch (e) { console.error(e); }
+    } catch { console.error('Audit log failed'); }
 }
 
 export async function updateUserStatus(lineUserId: string, newStatus: 'active' | 'inactive') {
@@ -158,7 +158,7 @@ export async function updateUserStatus(lineUserId: string, newStatus: 'active' |
     try {
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'UPDATE', lineUserId, `Status changed to ${newStatus}`);
-    } catch (e) { console.error(e); }
+    } catch { console.error('Audit log failed'); }
 }
 
 export async function updateUserProfile(lineUserId: string, profile: Partial<User>) {
@@ -170,7 +170,7 @@ export async function updateUserProfile(lineUserId: string, profile: Partial<Use
     const row = rows.find((r) => r.get('line_user_id') === lineUserId);
     if (!row) throw new Error('User not found');
 
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
     if (profile.first_name !== undefined) updates.first_name = profile.first_name;
     if (profile.last_name !== undefined) updates.last_name = profile.last_name;
     if (profile.position !== undefined) updates.position = profile.position;
@@ -201,7 +201,7 @@ export async function updateUserProfile(lineUserId: string, profile: Partial<Use
         department_id: row.get('department_id'),
         phone: row.get('phone'),
         email: row.get('email'),
-        _rowIndex: (row as any).rowIndex,
+        _rowIndex: (row as unknown as { rowIndex: number }).rowIndex,
     };
 
 }
@@ -221,7 +221,7 @@ export async function deleteUser(lineUserId: string) {
         try {
             const { logAudit } = await import('./auditService');
             await logAudit('ADMIN', 'DELETE', lineUserId, 'User deleted');
-        } catch (e) { console.error(e); }
+        } catch { console.error('Audit log failed'); }
     } else {
         throw new Error('User not found');
     }
