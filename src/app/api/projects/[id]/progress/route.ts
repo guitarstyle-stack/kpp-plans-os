@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { updateProjectProgress } from '@/lib/projectService';
+import { updateProjectProgress } from '@/lib/dataService';
 
 export const dynamic = 'force-dynamic';
 

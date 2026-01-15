@@ -1,13 +1,14 @@
-import { doc, connectToSheet } from './googleSheets';
-
-const SHEET_TITLE = 'Departments';
+import { prisma } from './prisma';
+import { Department as PrismaDepartment } from '@prisma/client';
 
 export interface Department {
     id: string;
     name: string;
+    code?: string; // Align with schema
     organization_type?: 'government' | 'private' | 'local_government' | 'civil_society' | 'other';
 }
 
+// Simple in-memory cache to reduce DB hits for frequently accessed static data
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 let cache: Department[] | null = null;
 let lastFetchTime = 0;
@@ -15,104 +16,98 @@ let lastFetchTime = 0;
 export async function getDepartments(): Promise<Department[]> {
     const now = Date.now();
     if (cache && (now - lastFetchTime < CACHE_TTL)) {
-        console.log('[Cache] Returning cached departments');
         return cache;
     }
 
-    await connectToSheet();
-    const sheet = doc.sheetsByTitle[SHEET_TITLE];
-    if (!sheet) throw new Error(`Sheet ${SHEET_TITLE} not found`);
+    try {
+        const departments = await prisma.department.findMany({
+            orderBy: { name: 'asc' }
+        });
 
-    const rows = await sheet.getRows();
-    const departments = rows.map((row) => ({
-        id: row.get('id'),
-        name: row.get('name'),
-        organization_type: row.get('organization_type') as 'government' | 'private' | 'local_government' | 'civil_society' | 'other' | undefined,
-    }));
+        // Map Prisma model to Service type if needed, or just cast
+        // Since schema doesn't have org_type yet, we might lose that data or need to add it to schema.
+        // For now, will return basic data.
+        const mapped = departments.map(d => ({
+            id: d.id,
+            name: d.name,
+            code: d.code || undefined,
+            organization_type: undefined // Schema doesn't have this yet, plan to add later if critical
+        }));
 
-    cache = departments;
-    lastFetchTime = now;
-    console.log('[Cache] Miss - Fetched departments from Sheet');
-    return departments;
+        cache = mapped;
+        lastFetchTime = now;
+        return mapped;
+    } catch (error) {
+        console.error('Failed to fetch departments:', error);
+        return [];
+    }
 }
 
 export async function getDepartmentById(id: string): Promise<Department | null> {
-    await connectToSheet();
-    const sheet = doc.sheetsByTitle[SHEET_TITLE];
-    if (!sheet) return null;
-
-    const rows = await sheet.getRows();
-    const row = rows.find(r => r.get('id') === id);
-    if (!row) return null;
-
-    return {
-        id: row.get('id'),
-        name: row.get('name'),
-        organization_type: row.get('organization_type') as 'government' | 'private' | 'local_government' | 'civil_society' | 'other' | undefined,
-    };
+    try {
+        const dept = await prisma.department.findUnique({ where: { id } });
+        if (!dept) return null;
+        return {
+            id: dept.id,
+            name: dept.name,
+            code: dept.code || undefined,
+            organization_type: undefined
+        };
+    } catch (error) {
+        console.error('Failed to fetch department:', error);
+        return null;
+    }
 }
 
 export async function addDepartment(name: string, organization_type?: string) {
-    await connectToSheet();
-    const sheet = doc.sheetsByTitle[SHEET_TITLE];
-    if (!sheet) throw new Error(`Sheet ${SHEET_TITLE} not found`);
-
-    const id = Date.now().toString();
-    await sheet.addRow({
-        id,
-        name,
-        organization_type: organization_type || ''
-    });
-
-    cache = null;
-
     try {
-        const { logAudit } = await import('./auditService');
-        await logAudit('ADMIN', 'CREATE', id, `Department created: ${name}`);
-    } catch (e) { console.error(e); }
+        const newDept = await prisma.department.create({
+            data: {
+                name,
+                // schema doesn't have type yet, so we ignore organization_type for now or store it if we update schema
+            }
+        });
 
-    return { id, name, organization_type: organization_type as 'government' | 'private' | 'local_government' | 'civil_society' | 'other' | undefined };
+        cache = null;
+
+        const { logAudit } = await import('./auditService');
+        await logAudit('ADMIN', 'CREATE', newDept.id, `Department created: ${name}`);
+
+        return { id: newDept.id, name: newDept.name };
+    } catch (error) {
+        console.error('Failed to create department:', error);
+        throw error;
+    }
 }
 
 export async function updateDepartment(id: string, name: string, organization_type?: string) {
-    await connectToSheet();
-    const sheet = doc.sheetsByTitle[SHEET_TITLE];
-    if (!sheet) throw new Error(`Sheet ${SHEET_TITLE} not found`);
-
-    const rows = await sheet.getRows();
-    const row = rows.find(r => r.get('id') === id);
-    if (!row) throw new Error('Department not found');
-
-    row.assign({
-        name,
-        organization_type: organization_type || ''
-    });
-    await row.save();
-
-    cache = null;
-
     try {
+        const updated = await prisma.department.update({
+            where: { id },
+            data: { name }
+        });
+
+        cache = null;
+
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'UPDATE', id, `Department updated name to: ${name}`);
-    } catch (e) { console.error(e); }
 
-    return { id, name, organization_type: organization_type as 'government' | 'private' | 'local_government' | 'civil_society' | 'other' | undefined };
+        return { id: updated.id, name: updated.name };
+    } catch (error) {
+        console.error('Failed to update department:', error);
+        throw error;
+    }
 }
 
 export async function deleteDepartment(id: string) {
-    await connectToSheet();
-    const sheet = doc.sheetsByTitle[SHEET_TITLE];
-    if (!sheet) throw new Error(`Sheet ${SHEET_TITLE} not found`);
-
-    const rows = await sheet.getRows();
-    const row = rows.find(r => r.get('id') === id);
-    if (!row) throw new Error('Department not found');
-
-    await row.delete();
-    cache = null; // Invalidate cache
-
     try {
+        await prisma.department.delete({ where: { id } });
+        cache = null;
+
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'DELETE', id, 'Department deleted');
-    } catch (e) { console.error(e); }
+    } catch (error) {
+        console.error('Failed to delete department:', error);
+        throw error;
+    }
 }

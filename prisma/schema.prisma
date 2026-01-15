@@ -33,22 +33,38 @@ model User {
   updatedAt    DateTime    @updatedAt
 }
 
+
 model Project {
   id                String      @id @default(cuid())
-  name              String // Short name or full name depending on usage
-  projectName       String? // Explicit full project name
-  agency            String // Agency/Department name (legacy or display)
-  description       String? // Target Group in old mapping, now Description
+  name              String 
+  projectName       String? 
+  agency            String 
+  description       String? 
   budget            Decimal     @default(0)
-  budgetSpent       Decimal     @default(0) // Cumulative spent
-  startDate         String // Storing as YYYY-MM-DD string to match current logic or DateTime
+  budgetSpent       Decimal     @default(0) 
+  startDate         String 
   endDate           String
   fiscalYear        String
   status            String      @default("Not Started")
   progress          Decimal     @default(0)
-  source            String? // Funding source
-  targetGroup       String? // Actual Target Group
+  source            String? 
+  targetGroup       String? 
+  targetGroupAmount String?
   responsiblePerson String?
+  
+  // New fields from types.ts
+  categoryId            String?
+  category              ProjectCategory? @relation(fields: [categoryId], references: [id])
+  developmentGuideline  String?
+  governanceIndicator   String?
+  annualTarget          String?
+  objective             String?
+  supportAgency         String?
+  
+  strategicPlanId       String?
+  strategicPlan         StrategicPlan? @relation(fields: [strategicPlanId], references: [id])
+  strategicGoalId       String?
+  strategicGoal         StrategicGoal? @relation(fields: [strategicGoalId], references: [id])
 
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
@@ -59,6 +75,51 @@ model Project {
   lastUpdated DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ProjectCategory {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  fiscalYear  String?
+  projects    Project[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model StrategicPlan {
+  id          String   @id @default(cuid())
+  name        String
+  fiscalYear  String
+  description String?
+  goals       StrategicGoal[]
+  projects    Project[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model StrategicGoal {
+  id          String   @id @default(cuid())
+  planId      String
+  plan        StrategicPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  indicators  StrategicIndicator[]
+  projects    Project[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model StrategicIndicator {
+  id                String   @id @default(cuid())
+  goalId            String
+  goal              StrategicGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  name              String
+  recommendedTarget String?
+  unit              String?
+  description       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Indicator {
@@ -74,15 +135,28 @@ model Indicator {
 }
 
 model Report {
-  id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id])
-  progress    Decimal
-  budgetSpent Decimal
-  performance String?
-  issues      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(cuid())
+  projectId        String
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  progress         Decimal
+  budgetSpent      Decimal
+  performance      String?
+  issues           String?
+  activities       String? // New field
+  indicatorResults String? // Check if JSON is better, currently String
+  submissionDate   String? // Store as string to match type
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  actor     String
+  action    String
+  target    String
+  details   String?
+  ip        String?
 }

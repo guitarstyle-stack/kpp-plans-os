@@ -65,7 +65,7 @@ export async function PUT(req: NextRequest) {
         if (oldName && oldName !== name) {
             try {
                 // Import dynamically or at top level if no circular dep
-                const { updateProjectAgency } = await import('@/lib/projectService');
+                const { updateProjectAgency } = await import('@/lib/dataService');
                 // Run in background (don't await strictly if not needed, but safe to await for consistency)
                 await updateProjectAgency(oldName, name);
             } catch (err) {

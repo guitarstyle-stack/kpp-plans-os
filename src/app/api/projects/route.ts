@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { createProject, updateProject, deleteProject } from '@/lib/projectService';
-import { getProjects } from '@/lib/dataService';
+import { getProjects, addProject, updateProject, deleteProject } from '@/lib/dataService';
 import { getUser } from '@/lib/userDataService';
 import { getDepartmentById } from '@/lib/departmentService';
 
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Agency is required' }, { status: 400 });
         }
 
-        const newProject = await createProject(projectData);
+        const newProject = await addProject(projectData);
         return NextResponse.json({ success: true, id: newProject.id }, { status: 201 });
     } catch (error) {
         console.error('Error creating project:', error);
@@ -97,7 +96,8 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
         }
 
-        const updatedProject = await updateProject(id, projectData);
+        const projectUpdate = { id, ...projectData };
+        const updatedProject = await updateProject(projectUpdate);
         return NextResponse.json({ success: true, id });
     } catch (error) {
         console.error('Error updating project:', error);
