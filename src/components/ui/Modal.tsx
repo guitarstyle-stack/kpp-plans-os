@@ -7,9 +7,10 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: ReactNode;
+    maxWidth?: string;
 }
 
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }: ModalProps) {
     // Prevent scrolling on body when modal is open
     useEffect(() => {
         if (isOpen) {
@@ -34,8 +35,8 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             ></div>
 
             {/* Modal Panel */}
-            <div className="relative w-full max-w-lg transform rounded-xl bg-white p-6 shadow-2xl transition-all sm:my-8 font-sans">
-                <div className="mb-5 flex items-center justify-between">
+            <div className={`relative w-full ${maxWidth} transform rounded-xl bg-white p-6 shadow-2xl transition-all sm:my-8 font-sans flex flex-col max-h-[90vh]`}>
+                <div className="mb-5 flex items-center justify-between flex-shrink-0">
                     <h3 className="text-xl font-bold text-gray-900">
                         {title}
                     </h3>
@@ -50,7 +51,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
                     </button>
                 </div>
 
-                <div className="mt-2">
+                <div className="mt-2 overflow-y-auto">
                     {children}
                 </div>
             </div>

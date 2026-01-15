@@ -55,6 +55,8 @@ export default async function DashboardPage() {
     const userProp: UserSession = user ? {
         userId: user.id || session.userId,
         displayName: user.display_name || session.displayName,
+        firstName: user.first_name,
+        lastName: user.last_name,
         pictureUrl: user.picture_url || session.pictureUrl,
         role: user.role || session.role,
     } : {
@@ -64,5 +66,13 @@ export default async function DashboardPage() {
         role: session.role
     };
 
-    return <DashboardClient initialProjects={projects} user={userProp} />;
+    let departmentName = '';
+    if (user?.department_id) {
+        const dept = await getDepartmentById(user.department_id);
+        if (dept) {
+            departmentName = dept.name;
+        }
+    }
+
+    return <DashboardClient initialProjects={projects} user={userProp} departmentName={departmentName} />;
 }

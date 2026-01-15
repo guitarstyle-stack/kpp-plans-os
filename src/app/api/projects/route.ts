@@ -50,14 +50,29 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.role !== 'admin') {
-        return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
-    }
-
     try {
         const projectData = await request.json();
+        const user = await getUser(session.userId as string);
+
+        // Security Check: Non-admins can only create projects for their own department
+        if (session.role !== 'admin') {
+            if (!user?.department_id) {
+                return NextResponse.json({ error: 'User has no department assigned' }, { status: 400 });
+            }
+            const department = await getDepartmentById(user.department_id);
+            if (!department) {
+                return NextResponse.json({ error: 'Department not found' }, { status: 400 });
+            }
+            // Force assign agency to user's department
+            projectData.agency = department.name;
+        }
+
+        if (session.role === 'admin' && !projectData.agency) {
+            return NextResponse.json({ error: 'Agency is required' }, { status: 400 });
+        }
+
         const newProject = await createProject(projectData);
-        return NextResponse.json(newProject, { status: 201 });
+        return NextResponse.json({ success: true, id: newProject.id }, { status: 201 });
     } catch (error) {
         console.error('Error creating project:', error);
         return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
@@ -83,7 +98,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const updatedProject = await updateProject(id, projectData);
-        return NextResponse.json(updatedProject);
+        return NextResponse.json({ success: true, id });
     } catch (error) {
         console.error('Error updating project:', error);
         return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });

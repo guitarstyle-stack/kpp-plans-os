@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (status === 'inactive') {
-            return NextResponse.json({ error: 'Account is inactive' }, { status: 403 });
+            return NextResponse.redirect(new URL('/approval-pending', req.url));
         }
 
         // 4. Create Session Token (JWT)

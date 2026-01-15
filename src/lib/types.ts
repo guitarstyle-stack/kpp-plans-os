@@ -18,16 +18,28 @@ export interface User {
 export interface UserSession {
     userId: string;
     displayName: string;
+    firstName?: string; // Formal first name
+    lastName?: string;  // Formal last name
     pictureUrl: string;
     role: string;
+}
+
+export interface ProjectCategory {
+    id: string;
+    name: string;
+    description?: string;
+    fiscal_year?: string;
+    _rowIndex?: number;
 }
 
 export interface Project {
     id: string;
     name: string; // Keep for backward compatibility
     project_name?: string; // New field
+    categoryId?: string; // New field for category
     agency: string;
     target_group?: string;
+    target_group_amount?: string; // New field for amount/quantity
     budget: string;
     source?: string;
     status: string;
@@ -36,14 +48,26 @@ export interface Project {
     end_date: string;
     last_updated?: string;
     fiscal_year: string;
+    budget_spent?: number; // Added for budget-based progress
     responsible_person?: string;
     description?: string;
     _rowIndex?: number;
+    performance?: string; // Latest performance status
+    development_guideline?: string; // แนวทางการพัฒนา
+    governance_indicator?: string; // ตัวชี้วัดของแนวทางพัฒนา
+    annual_target?: string; // ค่าเป้าหมาย รายปี
+    objective?: string; // วัตถุประสงค์ ของโครงการ
+    support_agency?: string; // หน่วยงานรับผิดชอบ (สนับสนุน)
+
+    // Links to Master Data
+    strategicPlanId?: string;
+    strategicGoalId?: string;
 }
 
 export interface Department {
     id: string;
     name: string;
+    organization_type?: 'government' | 'private' | 'local_government' | 'civil_society' | 'other';
 }
 
 export interface Indicator {
@@ -63,8 +87,35 @@ export interface ProjectReport {
     submissionDate: string;
     progress: number;
     budgetSpent: number;
-    performance: string;
+    performance: 'บรรลุวัตถุประสงค์' | 'อยู่ระหว่างดำเนินการ' | string;
     issues: string;
+    activities?: string; // New field for activities
     indicatorResults: Record<string, string>; // JSON stringified in Sheet
+    _rowIndex?: number;
+}
+
+export interface StrategicPlan {
+    id: string;
+    name: string; // development_guideline
+    fiscal_year: string;
+    description?: string;
+    _rowIndex?: number;
+}
+
+export interface StrategicGoal {
+    id: string;
+    planId: string;
+    name: string; // objective
+    description?: string;
+    _rowIndex?: number;
+}
+
+export interface StrategicIndicator {
+    id: string;
+    goalId: string;
+    name: string; // governance_indicator
+    recommended_target?: string;
+    unit?: string;
+    description?: string;
     _rowIndex?: number;
 }

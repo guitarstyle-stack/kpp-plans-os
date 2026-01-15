@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateProject, deleteProject } from '@/lib/dataService';
+import { updateProject, deleteProject, updateIndicators } from '@/lib/dataService';
 import { getSession } from '@/lib/auth';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -11,9 +11,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
         const { id } = await params;
         const body = await req.json();
-        const result = await updateProject({ ...body, id });
-        return NextResponse.json(result);
-    } catch {
+        const { indicators, ...projectData } = body;
+
+        // Update Project Fields
+        const result = await updateProject({ ...projectData, id });
+
+        // Update Indicators if provided
+        if (indicators && Array.isArray(indicators)) {
+            await updateIndicators(id, indicators);
+        }
+
+        return NextResponse.json({ success: true, id });
+    } catch (error) {
+        console.error('Update Project Error:', error);
         return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
     }
 }

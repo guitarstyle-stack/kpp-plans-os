@@ -11,7 +11,13 @@ export default function DepartmentsClient() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingDept, setEditingDept] = useState<Department | null>(null);
-    const [formData, setFormData] = useState({ name: '' });
+    const [formData, setFormData] = useState({ name: '', organization_type: '' });
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Filter and Sort
+    const filteredDepartments = departments
+        .filter(dept => dept.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        .sort((a, b) => a.name.localeCompare(b.name, 'th'));
 
     // Confirmation Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -38,20 +44,20 @@ export default function DepartmentsClient() {
 
     const handleOpenModal = (dept?: Department) => {
         setEditingDept(dept || null);
-        setFormData({ name: dept ? dept.name : '' });
+        setFormData({ name: dept ? dept.name : '', organization_type: dept?.organization_type || '' });
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingDept(null);
-        setFormData({ name: '' });
+        setFormData({ name: '', organization_type: '' });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const method = editingDept ? 'PUT' : 'POST';
-        const body = editingDept ? { id: editingDept.id, name: formData.name } : { name: formData.name };
+        const body = editingDept ? { id: editingDept.id, name: formData.name, organization_type: formData.organization_type } : { name: formData.name, organization_type: formData.organization_type };
 
         const promise = fetch('/api/departments', {
             method,
@@ -119,14 +125,31 @@ export default function DepartmentsClient() {
 
     return (
         <div className="bg-white shadow-sm border border-gray-100 rounded-2xl overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+            <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h3 className="text-lg font-bold text-gray-900 font-display">จัดการหน่วยงาน (Agency)</h3>
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                    + เพิ่มหน่วยงาน
-                </button>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="ค้นหาหน่วยงาน..."
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm whitespace-nowrap"
+                    >
+                        + เพิ่มหน่วยงาน
+                    </button>
+                </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-100">
@@ -134,14 +157,23 @@ export default function DepartmentsClient() {
                         <tr>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">รหัส</th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ชื่อหน่วยงาน</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ประเภทองค์กร</th>
                             <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                        {departments.map((dept) => (
+                        {filteredDepartments.map((dept) => (
                             <tr key={dept.id} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4 text-sm text-gray-500">{dept.id}</td>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{dept.name}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600">
+                                    {dept.organization_type === 'government' && 'หน่วยงานภาครัฐ'}
+                                    {dept.organization_type === 'private' && 'ภาคเอกชน'}
+                                    {dept.organization_type === 'local_government' && 'องค์กรปกครองส่วนท้องถิ่น'}
+                                    {dept.organization_type === 'civil_society' && 'ภาคประชาสังคม'}
+                                    {dept.organization_type === 'other' && 'อื่นๆ'}
+                                    {!dept.organization_type && <span className="text-gray-400">-</span>}
+                                </td>
                                 <td className="px-6 py-4 text-center space-x-2">
                                     <button
                                         onClick={() => handleOpenModal(dept)}
@@ -181,6 +213,22 @@ export default function DepartmentsClient() {
                             placeholder="เช่น สำนักปลัด"
                             autoFocus
                         />
+                    </div>
+                    <div className="mt-4">
+                        <label htmlFor="dept-type" className="block text-sm font-medium text-gray-700 mb-1">ประเภทองค์กร</label>
+                        <select
+                            id="dept-type"
+                            value={formData.organization_type}
+                            onChange={(e) => setFormData({ ...formData, organization_type: e.target.value })}
+                            className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent sm:text-sm transition-shadow"
+                        >
+                            <option value="">-- เลือกประเภทองค์กร --</option>
+                            <option value="government">หน่วยงานภาครัฐ</option>
+                            <option value="private">ภาคเอกชน</option>
+                            <option value="local_government">องค์กรปกครองส่วนท้องถิ่น</option>
+                            <option value="civil_society">ภาคประชาสังคม</option>
+                            <option value="other">อื่นๆ</option>
+                        </select>
                     </div>
                     <div className="mt-6 sm:flex sm:flex-row-reverse gap-3">
                         <button

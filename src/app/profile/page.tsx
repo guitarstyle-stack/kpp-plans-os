@@ -26,7 +26,21 @@ export default async function ProfilePage() {
     }
 
     return (
-        <SidebarLayout user={session as unknown as UserSession} activePage="profile">
+        <SidebarLayout
+            user={{
+                userId: user.id,
+                displayName: user.display_name,
+                display_name: user.display_name,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                pictureUrl: user.picture_url,
+                picture_url: user.picture_url,
+                role: user.role
+            }}
+            activePage="profile"
+        >
             <div className="p-8 bg-gray-50 min-h-screen">
                 <ProfileClient user={user} />
             </div>

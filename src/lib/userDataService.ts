@@ -20,11 +20,32 @@ export interface User {
 }
 
 export async function getUser(lineUserId: string): Promise<User | null> {
-    // Optimization: Try to find in cache first via getAllUsers
-    // This avoids a specific single-read API call if we already have the list
-    const users = await getAllUsers();
-    const user = users.find(u => u.line_user_id === lineUserId);
-    return user || null;
+    // Optimization: Skip cache to ensure fresh data for profile updates
+    await connectToSheet();
+    const sheet = doc.sheetsByTitle[SHEET_TITLE];
+    if (!sheet) throw new Error(`Sheet ${SHEET_TITLE} not found`);
+
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('line_user_id') === lineUserId);
+
+    if (!row) return null;
+
+    return {
+        id: row.get('id') || '',
+        line_user_id: row.get('line_user_id'),
+        display_name: row.get('display_name'),
+        picture_url: row.get('picture_url'),
+        role: row.get('role') as 'admin' | 'user',
+        status: row.get('status') as 'active' | 'inactive',
+        last_login: row.get('last_login'),
+        first_name: row.get('first_name'),
+        last_name: row.get('last_name'),
+        position: row.get('position'),
+        department_id: row.get('department_id'),
+        phone: row.get('phone')?.replace(/^'/, ''), // Remove leading quote if present
+        email: row.get('email'),
+        _rowIndex: (row as unknown as { rowIndex: number }).rowIndex,
+    };
 }
 
 export async function registerOrUpdateUser(profile: { userId: string; displayName: string; pictureUrl: string }) {
@@ -64,7 +85,7 @@ export async function registerOrUpdateUser(profile: { userId: string; displayNam
             display_name: profile.displayName,
             picture_url: profile.pictureUrl,
             role: 'user',
-            status: 'active',
+            status: 'inactive', // Default to inactive (Pending Approval)
             last_login: timestamp,
         });
 
@@ -110,7 +131,7 @@ export async function getAllUsers(): Promise<User[]> {
         last_name: row.get('last_name'),
         position: row.get('position'),
         department_id: row.get('department_id'),
-        phone: row.get('phone'),
+        phone: row.get('phone')?.replace(/^'/, ''), // Remove leading quote if present
         email: row.get('email'),
         _rowIndex: (row as unknown as { rowIndex: number }).rowIndex,
     }));
@@ -199,7 +220,7 @@ export async function updateUserProfile(lineUserId: string, profile: Partial<Use
         last_name: row.get('last_name'),
         position: row.get('position'),
         department_id: row.get('department_id'),
-        phone: row.get('phone'),
+        phone: row.get('phone')?.replace(/^'/, ''), // Remove leading quote if present
         email: row.get('email'),
         _rowIndex: (row as unknown as { rowIndex: number }).rowIndex,
     };

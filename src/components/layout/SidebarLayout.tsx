@@ -7,6 +7,10 @@ interface UserSession {
     userId?: string;
     displayName?: string; // camelCase
     display_name?: string; // snake_case from DB/Auth
+    firstName?: string;
+    lastName?: string;
+    first_name?: string; // snake_case from DB
+    last_name?: string; // snake_case from DB
     pictureUrl?: string; // camelCase
     picture_url?: string; // snake_case from DB/Auth
     role: string;
@@ -17,13 +21,20 @@ interface SidebarLayoutProps {
     user: UserSession;
     extraSidebarContent?: ReactNode;
     topSidebarContent?: ReactNode;
-    activePage: 'dashboard' | 'users' | 'departments' | 'profile' | 'report' | 'audit-logs' | 'projects' | 'admin-projects';
+    activePage: 'dashboard' | 'users' | 'departments' | 'profile' | 'report' | 'audit-logs' | 'projects' | 'admin-projects' | 'categories' | 'strategic-plans';
 }
 
 export default function SidebarLayout({ children, user, extraSidebarContent, topSidebarContent, activePage }: SidebarLayoutProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+
+    // Determine display name
+    const firstName = user.firstName || user.first_name;
+    const lastName = user.lastName || user.last_name;
+    const displayName = firstName && lastName
+        ? `${firstName} ${lastName}`
+        : (user.displayName || user.display_name);
 
     const navItems = [
         {
@@ -74,6 +85,26 @@ export default function SidebarLayout({ children, user, extraSidebarContent, top
                 icon: (
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                )
+            },
+            {
+                id: 'strategic-plans',
+                label: 'แผนพัฒนารายประเด็น (Master Data)',
+                href: '/admin/strategic-plans',
+                icon: (
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                )
+            },
+            {
+                id: 'categories',
+                label: 'รายละเอียดแผน',
+                href: '/admin/categories',
+                icon: (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                 )
             },
@@ -177,13 +208,23 @@ export default function SidebarLayout({ children, user, extraSidebarContent, top
                                         </h3>
                                     )}
                                     <div className="space-y-1">
-                                        {navItems.filter(item => ['users', 'departments', 'admin-projects', 'audit-logs'].includes(item.id)).map((item) => (
+                                        {navItems.filter(item => {
+                                            // Always show regular admin items (admin-projects removed from here)
+                                            if (['users', 'departments', 'strategic-plans', 'audit-logs'].includes(item.id)) return true;
+                                            // Only show Submenus (categories, admin-projects) if parent or self is active
+                                            if (['categories', 'admin-projects'].includes(item.id)) {
+                                                return ['strategic-plans', 'categories', 'admin-projects'].includes(activePage);
+                                            }
+                                            return false;
+                                        }).map((item) => (
                                             <Link
                                                 key={item.id}
                                                 href={item.href}
-                                                className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all ${activePage === item.id
-                                                    ? 'bg-indigo-50 text-indigo-600 shadow-sm'
-                                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all 
+                                                    ${['categories', 'admin-projects'].includes(item.id) && !isCollapsed ? 'ml-6 border-l-2 border-indigo-100 pl-3 rounded-none' : ''}
+                                                    ${activePage === item.id
+                                                        ? 'bg-indigo-50 text-indigo-600 shadow-sm'
+                                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                                     } ${isCollapsed ? 'justify-center' : ''}`}
                                                 title={isCollapsed ? item.label : ''}
                                             >
@@ -214,14 +255,14 @@ export default function SidebarLayout({ children, user, extraSidebarContent, top
                                 <img className="h-9 w-9 rounded-full bg-gray-300 object-cover ring-2 ring-white shadow-md" src={user.pictureUrl || user.picture_url} alt="" />
                             ) : (
                                 <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-md">
-                                    {(user.displayName || user.display_name || 'U').charAt(0)}
+                                    {(displayName || 'U').charAt(0)}
                                 </div>
                             )}
 
                             {!isCollapsed && (
                                 <div className="ml-3 overflow-hidden">
                                     <Link href="/profile" className="text-sm font-medium text-gray-700 truncate hover:text-indigo-600 transition-colors block">
-                                        {user.displayName || user.display_name}
+                                        {displayName}
                                     </Link>
                                     <a href="/auth/logout" className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center mt-0.5">
                                         <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -28,14 +28,11 @@ export default function ReportsClient() {
 
     const fetchData = async () => {
         try {
-            const [projectsRes, deptRes] = await Promise.all([
-                fetch('/api/projects'),
-                fetch('/api/departments')
-            ]);
+            // Use batched endpoint to reduce API calls
+            const res = await fetch('/api/batch/dashboard');
 
-            if (projectsRes.ok && deptRes.ok) {
-                const projectsData = await projectsRes.json();
-                const deptData = await deptRes.json();
+            if (res.ok) {
+                const { projects: projectsData, departments: deptData } = await res.json();
                 setProjects(projectsData);
                 setDepartments(deptData);
             }

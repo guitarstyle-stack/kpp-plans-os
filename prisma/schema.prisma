@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String?  @unique
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id           String      @id @default(cuid())
+  username     String      @unique
+  password     String
+  role         String      @default("user") // admin, user
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  projects     Project[]
+  reports      Report[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Project {
+  id                String      @id @default(cuid())
+  name              String // Short name or full name depending on usage
+  projectName       String? // Explicit full project name
+  agency            String // Agency/Department name (legacy or display)
+  description       String? // Target Group in old mapping, now Description
+  budget            Decimal     @default(0)
+  budgetSpent       Decimal     @default(0) // Cumulative spent
+  startDate         String // Storing as YYYY-MM-DD string to match current logic or DateTime
+  endDate           String
+  fiscalYear        String
+  status            String      @default("Not Started")
+  progress          Decimal     @default(0)
+  source            String? // Funding source
+  targetGroup       String? // Actual Target Group
+  responsiblePerson String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  indicators Indicator[]
+  reports    Report[]
+
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Indicator {
+  id        String   @id @default(cuid())
+  name      String
+  target    String
+  unit      String
+  result    String?
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  progress    Decimal
+  budgetSpent Decimal
+  performance String?
+  issues      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

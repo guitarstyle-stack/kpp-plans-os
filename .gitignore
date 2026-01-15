@@ -57,3 +57,5 @@ backup/
 *.swo
 *~
 .DS_Store
+
+/src/generated/prisma

@@ -19,6 +19,7 @@ export default function UserManagementClient() {
 
     const fetchData = async () => {
         try {
+            // Fetch users and departments in parallel
             const [usersRes, deptsRes] = await Promise.all([
                 fetch('/api/users'),
                 fetch('/api/departments')
@@ -208,15 +209,15 @@ export default function UserManagementClient() {
                                 <TableRowSkeleton cols={6} />
                                 <TableRowSkeleton cols={6} />
                             </>
-                        ) : users.map((user) => (
-                            <tr key={user.line_user_id} className="hover:bg-gray-50 transition-colors">
+                        ) : users.map((user, index) => (
+                            <tr key={user.line_user_id || index} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         {user.picture_url && <img className="h-8 w-8 rounded-full mr-3" src={user.picture_url} alt="" />}
                                         <div>
                                             <div className="text-sm font-medium text-gray-900">{user.display_name}</div>
-                                            <div className="text-xs text-gray-500">ID: {user.line_user_id.substring(0, 8)}...</div>
+                                            <div className="text-xs text-gray-500">ID: {(user.line_user_id || '').substring(0, 8)}...</div>
                                         </div>
                                     </div>
                                 </td>

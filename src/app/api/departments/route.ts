@@ -26,13 +26,15 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
     const session = await getSession();
-    if (!session || (session as unknown as UserSession).role !== 'admin') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    // Allow any authenticated user to create a department (per user request)
+    // Removed admin check
 
     try {
-        const { name } = await req.json();
-        const result = await addDepartment(name);
+        const { name, organization_type } = await req.json();
+        const result = await addDepartment(name, organization_type);
         return NextResponse.json(result);
     } catch {
         return NextResponse.json({ error: 'Failed to create department' }, { status: 500 });
@@ -46,10 +48,34 @@ export async function PUT(req: NextRequest) {
     }
 
     try {
-        const { id, name } = await req.json();
-        const result = await updateDepartment(id, name);
-        return NextResponse.json(result);
-    } catch {
+        const { id, name, organization_type } = await req.json();
+
+        if (!id) {
+            return NextResponse.json({ error: 'Department ID required' }, { status: 400 });
+        }
+
+        // Get old department to check for name change
+        const { getDepartmentById } = await import('@/lib/departmentService');
+        const oldDept = await getDepartmentById(id);
+        const oldName = oldDept?.name;
+
+        const updatedDepartment = await updateDepartment(id, name, organization_type);
+
+        // Cascade Update: If name changed, update all projects
+        if (oldName && oldName !== name) {
+            try {
+                // Import dynamically or at top level if no circular dep
+                const { updateProjectAgency } = await import('@/lib/projectService');
+                // Run in background (don't await strictly if not needed, but safe to await for consistency)
+                await updateProjectAgency(oldName, name);
+            } catch (err) {
+                console.error('Failed to cascade update project agencies:', err);
+            }
+        }
+
+        return NextResponse.json(updatedDepartment);
+    } catch (error) {
+        console.error('Error updating department:', error);
         return NextResponse.json({ error: 'Failed to update department' }, { status: 500 });
     }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Project, Indicator } from '@/lib/types';
+import { Project, Indicator, StrategicPlan, StrategicGoal, StrategicIndicator } from '@/lib/types';
 import toast from 'react-hot-toast';
 import Modal from '../ui/Modal';
 import ConfirmationModal from '../ui/ConfirmationModal';
@@ -24,20 +24,91 @@ export default function AdminProjectsManagement() {
     // Indicator State
     const [indicators, setIndicators] = useState<Partial<Indicator>[]>([]);
 
+    // Master Data State
+    const [strategicPlans, setStrategicPlans] = useState<StrategicPlan[]>([]);
+    const [strategicGoals, setStrategicGoals] = useState<StrategicGoal[]>([]);
+    const [strategicIndicatorsList, setStrategicIndicatorsList] = useState<StrategicIndicator[]>([]);
+
+    useEffect(() => {
+        if (showCreateModal && formData.fiscal_year) {
+            fetchStrategicPlans(formData.fiscal_year);
+        }
+    }, [showCreateModal, formData.fiscal_year]);
+
+    const fetchStrategicPlans = async (year: string) => {
+        try {
+            const res = await fetch(`/api/strategic-plans?fiscalYear=${year}`);
+            if (res.ok) setStrategicPlans(await res.json());
+        } catch (error) { console.error(error); }
+    };
+
+    const handlePlanChange = async (planId: string) => {
+        const plan = strategicPlans.find(p => p.id === planId);
+        setFormData(prev => ({
+            ...prev,
+            strategicPlanId: planId,
+            development_guideline: plan?.name || '',
+            strategicGoalId: '', // Reset lower levels
+            objective: ''
+        }));
+        setStrategicGoals([]);
+        setStrategicIndicatorsList([]);
+
+        if (planId) {
+            try {
+                const res = await fetch(`/api/strategic-goals?planId=${planId}`);
+                if (res.ok) setStrategicGoals(await res.json());
+            } catch (error) { console.error(error); }
+        }
+    };
+
+    const handleGoalChange = async (goalId: string) => {
+        const goal = strategicGoals.find(g => g.id === goalId);
+        setFormData(prev => ({
+            ...prev,
+            strategicGoalId: goalId,
+            objective: goal?.name || ''
+        }));
+        setStrategicIndicatorsList([]);
+
+        if (goalId) {
+            try {
+                const res = await fetch(`/api/strategic-indicators?goalId=${goalId}`);
+                if (res.ok) setStrategicIndicatorsList(await res.json());
+            } catch (error) { console.error(error); }
+        }
+    };
+
+    const handleStrategicIndicatorSelect = (indId: string) => {
+        const ind = strategicIndicatorsList.find(i => i.id === indId);
+        if (ind) {
+            setFormData(prev => ({
+                ...prev,
+                governance_indicator: ind.name,
+                annual_target: ind.recommended_target || prev.annual_target,
+            }));
+            // Also add to project indicators if list is empty?
+            if (indicators.length === 0) {
+                setIndicators([{
+                    name: ind.name,
+                    target: ind.recommended_target || '',
+                    unit: ind.unit || ''
+                }]);
+            }
+        }
+    };
+
     useEffect(() => {
         fetchData();
     }, []);
 
     const fetchData = async () => {
         try {
-            const [projectsRes, deptRes] = await Promise.all([
-                fetch('/api/projects'),
-                fetch('/api/departments')
-            ]);
+            // Use batched endpoint to reduce API calls
+            const res = await fetch('/api/batch/admin-projects');
 
-            if (projectsRes.ok && deptRes.ok) {
-                const projectsData = await projectsRes.json();
-                const deptData = await deptRes.json();
+            if (res.ok) {
+                const { projects: projectsData, departments: deptData } = await res.json();
                 setProjects(projectsData);
                 setDepartments(deptData);
             }
@@ -54,21 +125,57 @@ export default function AdminProjectsManagement() {
             project_name: '',
             agency: '',
             budget: '0',
+            source: '',
+            target_group: '',
+            target_group_amount: '',
             start_date: '',
             end_date: '',
-            status: 'Not Started',
+            status: 'ยังไม่ดำเนินการ',
             progress: '0',
             fiscal_year: new Date().getFullYear() + 543 + '',
             responsible_person: '',
-            description: ''
+            description: '',
+            development_guideline: '',
+            governance_indicator: '',
+            annual_target: '',
+            objective: '',
+            support_agency: ''
         });
         setIndicators([]);
         setShowCreateModal(true);
     };
 
+    const formatDateForInput = (dateString: string) => {
+        if (!dateString) return '';
+        // If already in YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+
+        // Handle DD/MM/YYYY (Thai/UK format)
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+            const [day, month, year] = parts;
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+
+        // Handle Date object string or other formats
+        try {
+            const date = new Date(dateString);
+            if (!isNaN(date.getTime())) {
+                return date.toISOString().split('T')[0];
+            }
+        } catch (e) {
+            console.error('Invalid date', e);
+        }
+        return dateString;
+    };
+
     const handleEdit = async (project: Project) => {
         setSelectedProject(project);
-        setFormData(project);
+        setFormData({
+            ...project,
+            start_date: formatDateForInput(project.start_date),
+            end_date: formatDateForInput(project.end_date)
+        });
         setIndicators([]); // Reset first
 
         // Fetch indicators
@@ -178,7 +285,7 @@ export default function AdminProjectsManagement() {
 
     const confirmDelete = async () => {
         try {
-            const res = await fetch(`/api/projects?id=${selectedProject?.id}`, {
+            const res = await fetch(`/api/projects/${selectedProject?.id}`, {
                 method: 'DELETE'
             });
 
@@ -248,7 +355,7 @@ export default function AdminProjectsManagement() {
                                     <tr key={project.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 text-sm text-gray-900">{project.project_name || project.name}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600">{project.agency}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-900">{project.budget}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-900">{Number(project.budget).toLocaleString()}</td>
                                         <td className="px-6 py-4 text-sm">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${project.status === 'Completed' || project.status === 'ดำเนินการแล้วเสร็จ'
                                                 ? 'bg-green-100 text-green-800'
@@ -291,15 +398,96 @@ export default function AdminProjectsManagement() {
                         setShowEditModal(false);
                     }}
                     title={showCreateModal ? 'สร้างโครงการใหม่' : 'แก้ไขโครงการ'}
+                    maxWidth="max-w-2xl"
                 >
                     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                         {/* Basic Info */}
+                        {/* 0. Fiscal Year - Moved up for hierarchy flow */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อโครงการ</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">ปีงบประมาณ</label>
+                            <select
+                                value={formData.fiscal_year || ''}
+                                onChange={(e) => setFormData({ ...formData, fiscal_year: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            >
+                                {[...Array(5)].map((_, i) => {
+                                    const year = new Date().getFullYear() + 543 - 2 + i;
+                                    return <option key={year} value={year}>{year}</option>;
+                                })}
+                            </select>
+                        </div>
+
+                        {/* 1. Development Guideline (Strategic Plan) */}
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">เลือกแผนพัฒนารายประเด็น (Strategic Plan)</label>
+                                <select
+                                    value={formData.strategicPlanId || ''}
+                                    onChange={(e) => handlePlanChange(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-2"
+                                >
+                                    <option value="">-- เลือกแผน --</option>
+                                    {strategicPlans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                                <label className="block text-xs text-gray-500 mb-1">แนวทางการพัฒนา (แก้ไขได้)</label>
+                                <textarea
+                                    rows={2}
+                                    value={formData.development_guideline || ''}
+                                    onChange={(e) => setFormData({ ...formData, development_guideline: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                                />
+                            </div>
+
+                            {/* 2. Objective (Strategic Goal) */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">เลือกเป้าหมาย (Strategic Goal)</label>
+                                <select
+                                    value={formData.strategicGoalId || ''}
+                                    onChange={(e) => handleGoalChange(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-2"
+                                    disabled={!formData.strategicPlanId}
+                                >
+                                    <option value="">-- เลือกเป้าหมาย --</option>
+                                    {strategicGoals.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                </select>
+                                <label className="block text-xs text-gray-500 mb-1">วัตถุประสงค์ (แก้ไขได้)</label>
+                                <textarea
+                                    rows={2}
+                                    value={formData.objective || ''}
+                                    onChange={(e) => setFormData({ ...formData, objective: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                                />
+                            </div>
+
+                            {/* 3. Governance Indicator */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">เลือกตัวชี้วัดจากแผน (Optional)</label>
+                                <select
+                                    onChange={(e) => handleStrategicIndicatorSelect(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-2"
+                                    disabled={!formData.strategicGoalId}
+                                    value=""
+                                >
+                                    <option value="">-- เลือกเพื่อนำเข้าข้อมูล --</option>
+                                    {strategicIndicatorsList.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+                                </select>
+                                <label className="block text-xs text-gray-500 mb-1">ตัวชี้วัดของแนวทางพัฒนา</label>
+                                <input
+                                    type="text"
+                                    value={formData.governance_indicator || ''}
+                                    onChange={(e) => setFormData({ ...formData, governance_indicator: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                                />
+                            </div>
+                        </div>
+
+                        {/* 3. Annual Target (Moved out of grouped box if preferred, or kept here) */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">ค่าเป้าหมาย รายปี ({formData.fiscal_year})</label>
                             <input
                                 type="text"
-                                value={formData.project_name || ''}
-                                onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
+                                value={formData.annual_target || ''}
+                                onChange={(e) => setFormData({ ...formData, annual_target: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                             />
                         </div>
@@ -327,13 +515,44 @@ export default function AdminProjectsManagement() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">ปีงบประมาณ</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">โครงการ/กิจกรรม</label>
                                 <input
                                     type="text"
-                                    value={formData.fiscal_year || ''}
-                                    onChange={(e) => setFormData({ ...formData, fiscal_year: e.target.value })}
+                                    value={formData.project_name || formData.name || ''}
+                                    onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                                 />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">แหล่งงบประมาณ</label>
+                                <input
+                                    type="text"
+                                    value={formData.source || ''}
+                                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">กลุ่มเป้าหมาย (รายละเอียด)</label>
+                                <input
+                                    type="text"
+                                    placeholder="เช่น เกษตรกรในพื้นที่, นักเรียน"
+                                    value={formData.target_group || ''}
+                                    onChange={(e) => setFormData({ ...formData, target_group: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-2"
+                                />
+                                <div className="flex gap-2 items-center">
+                                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">จำนวน:</label>
+                                    <input
+                                        type="text"
+                                        placeholder="ระบุจำนวน (เช่น 50 คน)"
+                                        value={formData.target_group_amount || ''}
+                                        onChange={(e) => setFormData({ ...formData, target_group_amount: e.target.value })}
+                                        className="flex-1 px-3 py-1.5 min-w-0 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    />
+                                </div>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -357,7 +576,17 @@ export default function AdminProjectsManagement() {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">ผู้รับผิดชอบ</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">หน่วยงานรับผิดชอบ (สนับสนุน)</label>
+                            <input
+                                type="text"
+                                value={formData.support_agency || ''}
+                                onChange={(e) => setFormData({ ...formData, support_agency: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">ผู้รับผิดชอบโครงการ</label>
                             <input
                                 type="text"
                                 value={formData.responsible_person || ''}

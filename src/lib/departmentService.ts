@@ -5,6 +5,7 @@ const SHEET_TITLE = 'Departments';
 export interface Department {
     id: string;
     name: string;
+    organization_type?: 'government' | 'private' | 'local_government' | 'civil_society' | 'other';
 }
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -26,6 +27,7 @@ export async function getDepartments(): Promise<Department[]> {
     const departments = rows.map((row) => ({
         id: row.get('id'),
         name: row.get('name'),
+        organization_type: row.get('organization_type') as 'government' | 'private' | 'local_government' | 'civil_society' | 'other' | undefined,
     }));
 
     cache = departments;
@@ -46,28 +48,33 @@ export async function getDepartmentById(id: string): Promise<Department | null> 
     return {
         id: row.get('id'),
         name: row.get('name'),
+        organization_type: row.get('organization_type') as 'government' | 'private' | 'local_government' | 'civil_society' | 'other' | undefined,
     };
 }
 
-export async function addDepartment(name: string) {
+export async function addDepartment(name: string, organization_type?: string) {
     await connectToSheet();
     const sheet = doc.sheetsByTitle[SHEET_TITLE];
     if (!sheet) throw new Error(`Sheet ${SHEET_TITLE} not found`);
 
-    const id = Date.now().toString(); // Simple ID generation
-    await sheet.addRow({ id, name });
+    const id = Date.now().toString();
+    await sheet.addRow({
+        id,
+        name,
+        organization_type: organization_type || ''
+    });
 
-    cache = null; // Invalidate cache
+    cache = null;
 
     try {
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'CREATE', id, `Department created: ${name}`);
     } catch (e) { console.error(e); }
 
-    return { id, name };
+    return { id, name, organization_type: organization_type as 'government' | 'private' | 'local_government' | 'civil_society' | 'other' | undefined };
 }
 
-export async function updateDepartment(id: string, name: string) {
+export async function updateDepartment(id: string, name: string, organization_type?: string) {
     await connectToSheet();
     const sheet = doc.sheetsByTitle[SHEET_TITLE];
     if (!sheet) throw new Error(`Sheet ${SHEET_TITLE} not found`);
@@ -76,17 +83,20 @@ export async function updateDepartment(id: string, name: string) {
     const row = rows.find(r => r.get('id') === id);
     if (!row) throw new Error('Department not found');
 
-    row.assign({ name });
+    row.assign({
+        name,
+        organization_type: organization_type || ''
+    });
     await row.save();
 
-    cache = null; // Invalidate cache
+    cache = null;
 
     try {
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'UPDATE', id, `Department updated name to: ${name}`);
     } catch (e) { console.error(e); }
 
-    return { id, name };
+    return { id, name, organization_type: organization_type as 'government' | 'private' | 'local_government' | 'civil_society' | 'other' | undefined };
 }
 
 export async function deleteDepartment(id: string) {

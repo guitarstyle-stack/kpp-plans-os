@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
+import { getUser } from '@/lib/userDataService'; // Import getUser
 import UserManagementClient from '@/components/UserManagementClient';
+import SidebarLayout from '@/components/layout/SidebarLayout';
 
 interface UserSession {
     userId: string;
@@ -8,10 +10,6 @@ interface UserSession {
     pictureUrl: string;
     role: string;
 }
-
-import SidebarLayout from '@/components/layout/SidebarLayout';
-
-// ... (imports)
 
 export default async function AdminUsersPage() {
     const sessionData = await getSession();
@@ -33,8 +31,22 @@ export default async function AdminUsersPage() {
         );
     }
 
+    const user = await getUser(session.userId);
+
+    const sidebarUser = user ? {
+        userId: user.id || session.userId,
+        displayName: user.display_name || session.displayName,
+        display_name: user.display_name,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        pictureUrl: user.picture_url || session.pictureUrl,
+        role: user.role || session.role,
+    } : session as unknown as any;
+
     return (
-        <SidebarLayout user={session} activePage="users">
+        <SidebarLayout user={sidebarUser} activePage="users">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <UserManagementClient />
             </div>
