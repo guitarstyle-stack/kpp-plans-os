@@ -1,239 +1,129 @@
-<<<<<<< HEAD
-# PlanOS - Project Management System
+# PlanOS - ระบบบริหารจัดการโครงการ (Project Management System)
 
-A modern, full-featured project management system built with Next.js, featuring LINE authentication, Google Sheets integration, and comprehensive admin capabilities.
+PlanOS คือระบบบริหารจัดการโครงการที่ทันสมัย พัฒนาด้วย Next.js รองรับการเข้าสู่ระบบผ่าน LINE (LINE Login), ใช้ฐานข้อมูล Supabase และมีระบบสำรองข้อมูลไปยัง Google Sheets อัตโนมัติ
 
-## 🚀 Features
+[English Version is below / เลื่อนลงล่างสำหรับภาษาอังกฤษ]
 
-### Core Functionality
-- **Project Management**: Create, track, and manage projects with detailed progress tracking
-- **User Management**: Role-based access control (Admin, Manager, User)
-- **Department Management**: Organize users and projects by departments
-- **Audit Logging**: Complete audit trail of all system activities
-- **Reports & Analytics**: Comprehensive reporting and data visualization
+---
 
-### Authentication & Security
-- **LINE Login Integration**: Secure authentication via LINE platform
-- **Session Management**: JWT-based session handling with secure cookies
-- **Role-Based Access Control**: Granular permissions for different user roles
-- **Audit Trail**: Track all user actions and system changes
+## 🚀 ฟีเจอร์หลัก (Features)
 
-### Data Management
-- **Google Sheets Backend**: Leverages Google Sheets as a flexible database
-- **Real-time Updates**: Live data synchronization
-- **Data Export**: Export reports and project data
+### 1. ระบบจัดการโครงการ (Project Management)
+-   สร้าง, แก้ไข, และติดตามสถานะโครงการ
+-   ดูความคืบหน้าของโครงการ (Progress Tracking) ในรูปแบบกราฟและเปอร์เซ็นต์
+-   จัดการงบประมาณ (Budget) และงบประมาณที่ใช้ไป
+-   ระบุกลุ่มเป้าหมายและผู้รับผิดชอบโครงการ
 
-### User Interface
-- **Modern Design**: Clean, responsive UI built with Tailwind CSS
-- **Dark Mode Support**: Eye-friendly dark theme
-- **Interactive Charts**: Data visualization with Chart.js
-- **Toast Notifications**: Real-time feedback for user actions
+### 2. การจัดการข้อมูล (Data Management)
+-   **Database**: ใช้ **Supabase (PostgreSQL)** เป็นฐานข้อมูลหลัก เพื่อความรวดเร็วและรองรับ SQL เต็มรูปแบบ
+-   **Backup**: ระบบสำรองข้อมูลอัตโนมัติไปยัง **Google Sheets** ทุกวันเวลา 01.00 น.
+-   **Real-time**: อัปเดตข้อมูลสถานะโครงการแบบ Real-time
 
-## 🛠️ Tech Stack
+### 3. ระบบสมาชิกและความปลอดภัย (Authentication & Security)
+-   **LINE Login**: เข้าสู่ระบบง่ายๆ ผ่าน LINE Account
+-   **Role-Based Access**: แบ่งสิทธิ์ผู้ใช้งานเป็น Admin, User (สามารถจัดการสิทธิ์ได้)
+-   **Audit Logs**: บันทึกทุกการกระทำในระบบเพื่อตรวจสอบความโปร่งใส
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4
-- **Authentication**: LINE Login API
-- **Database**: Google Sheets API
-- **Charts**: Chart.js + React-ChartJS-2
-- **HTTP Client**: Axios
-- **Notifications**: React Hot Toast
+### 4. หน้าจอใช้งาน (User Interface)
+-   **Modern UI**: ออกแบบด้วย Tailwind CSS 4 ทันสมัย สวยงาม และ Responsive รองรับมือถือ
+-   **Dashboard**: กราฟสรุปผลการดำเนินงาน (Chart.js)
+-   **Dark Mode**: รองรับโหมดมืด
 
-## 📋 Prerequisites
+---
 
-Before you begin, ensure you have:
-- Node.js 18+ installed
-- A Google Cloud Project with Sheets API enabled
-- A LINE Developers account with a channel created
-- Service account credentials from Google Cloud
+## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
 
-## 🔧 Installation
+-   **Frontend/Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+-   **Language**: TypeScript
+-   **Styling**: Tailwind CSS 4
+-   **Database**: Supabase (PostgreSQL) + Prisma ORM
+-   **Backup**: Google Sheets API
+-   **Authentication**: LINE Login API + JWT
+-   **Deployment**: Vercel
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/PlanOS.git
-   cd PlanOS
-   ```
+---
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+## ⚙️ การติดตั้งและใช้งาน (Installation)
 
-3. **Set up environment variables**
-   
-   Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Then edit `.env` with your credentials:
-   ```env
-   PORT=3000
-   GOOGLE_SHEET_ID=your_google_sheet_id_here
-   GOOGLE_SERVICE_ACCOUNT_EMAIL=your_service_account_email@project.iam.gserviceaccount.com
-   GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-   
-   # LINE Login Credentials
-   LINE_CHANNEL_ID=your_line_channel_id
-   LINE_CHANNEL_SECRET=your_line_channel_secret
-   LINE_CALLBACK_URL=http://localhost:3000/auth/line/callback
-   
-   # Session Secret (random string)
-   SESSION_SECRET=change_this_to_a_secure_random_string
-   ```
+### 1. เตรียมความพร้อม (Prerequisites)
+-   Node.js 18 ขึ้นไป
+-   บัญชี Supabase (สำหรับ Database)
+-   บัญชี Google Cloud (สำหรับ Google Sheets Backup)
+-   บัญชี LINE Developers (สำหรับ LINE Login)
 
-4. **Set up Google Sheets**
-   
-   Create a Google Sheet with the following sheets:
-   - `Users` - User information and roles
-   - `Departments` - Department data
-   - `Projects` - Project details and status
-   - `AuditLogs` - System audit trail
-
-5. **Run the development server**
-   ```bash
-   npm run dev
-   ```
-
-6. **Open your browser**
-   
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-## 🔑 Configuration
-
-### Google Cloud Setup
-
-1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable the Google Sheets API
-3. Create a Service Account
-4. Download the JSON key file
-5. Share your Google Sheet with the service account email
-6. Copy the credentials to your `.env` file
-
-### LINE Developers Setup
-
-1. Create a channel in [LINE Developers Console](https://developers.line.biz/)
-2. Get your Channel ID and Channel Secret
-3. Set the callback URL to `http://localhost:3000/auth/line/callback` (or your production URL)
-4. Add the credentials to your `.env` file
-
-## 📁 Project Structure
-
-```
-PlanOS/
-├── src/
-│   ├── app/                    # Next.js App Router pages
-│   │   ├── api/               # API routes
-│   │   ├── auth/              # Authentication routes
-│   │   ├── dashboard/         # Dashboard pages
-│   │   └── profile/           # User profile
-│   ├── components/            # React components
-│   │   ├── admin/            # Admin-specific components
-│   │   ├── layout/           # Layout components
-│   │   └── ui/               # Reusable UI components
-│   └── lib/                   # Utility functions and services
-│       ├── auth.ts           # Authentication utilities
-│       ├── googleSheets.ts   # Google Sheets integration
-│       ├── dataService.ts    # Data management
-│       └── types.ts          # TypeScript type definitions
-├── public/                    # Static assets
-├── .env.example              # Environment variables template
-└── package.json              # Project dependencies
+### 2. ติดตั้งโปรเจกต์
+```bash
+git clone https://github.com/guitarstyle-stack/planos.git
+cd planos
+npm install
 ```
 
-## 🚦 Available Scripts
+### 3. ตั้งค่า Environment Variables (`.env`)
+คัดลอกไฟล์ `.env.example` เป็น `.env` และใส่ค่าต่างๆ:
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
+```env
+# ตั้งค่า Server
+PORT=3000
+SESSION_SECRET=ตั้งรหัสสุ่มยาวๆเพื่อความปลอดภัย
 
-## 🔐 User Roles
+# Google Sheets Config (สำหรับ Backup)
+GOOGLE_SHEET_ID=ไอดีของGoogleSheet
+GOOGLE_SERVICE_ACCOUNT_EMAIL=อีเมลของServiceAccount
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY...-----"
 
-- **Admin**: Full system access, user management, audit logs
-- **Manager**: Department and project management
-- **User**: View and update assigned projects
+# LINE Login Config
+LINE_CHANNEL_ID=ไอดีจากLINEDevelopers
+LINE_CHANNEL_SECRET=รหัสลับจากLINEDevelopers
+LINE_CALLBACK_URL=http://localhost:3000/auth/line/callback  # หรือ URL จริงเมื่อ Deploy
 
-## 📊 Features Overview
+# Supabase (Database)
+# นำค่าเหล่านี้มาจากเมนู Connect > ORM > Prisma ใน Supabase Dashboard
+POSTGRES_URL="..."
+POSTGRES_PRISMA_URL="..."
+POSTGRES_URL_NON_POOLING="..."
+POSTGRES_USER="..."
+POSTGRES_HOST="..."
+POSTGRES_PASSWORD="..."
+POSTGRES_DATABASE="..."
 
-### Dashboard
-- Overview of all projects and their status
-- Quick access to recent activities
-- Project progress visualization
+# Supabase Client Credential
+SUPABASE_URL="..."
+SUPABASE_ANON_KEY="..."
+```
 
-### Project Management
-- Create and edit projects
-- Track project progress (0-100%)
-- Assign projects to users
-- Set project status and deadlines
+### 4. สร้างตารางในฐานข้อมูล (Migrate Database)
+```bash
+npx prisma db push
+```
 
-### User Management (Admin)
-- Create and manage user accounts
-- Assign roles and departments
-- View user activity
+### 5. รันโปรเจกต์ (Run Development Server)
+```bash
+npm run dev
+```
+เปิดบราวเซอร์ไปที่ [http://localhost:3000](http://localhost:3000)
 
-### Department Management (Admin)
-- Create and organize departments
-- Assign managers to departments
-- Track department projects
+---
 
-### Audit Logs (Admin)
-- Complete system activity log
-- Filter by user, action, or date
-- Export audit data
+## 🌐 การนำขึ้นใช้งานจริง (Deployment on Vercel)
 
-### Reports
-- Project status reports
-- User activity reports
-- Department performance metrics
+1.  Push โค้ดทั้งหมดขึ้น GitHub
+2.  ไปที่ [Vercel](https://vercel.com) และกด **Add New Project**
+3.  เลือก Repository `planos` จาก GitHub
+4.  ในหน้าตั้งค่า **Environment Variables**:
+    -   ให้ Copy ค่าทั้งหมดจากไฟล์ `.env` ในเครื่องเรา ไปใส่ใน Vercel
+5.  กด **Deploy**
+6.  **สำคัญ:** เมื่อได้ Domain จริงจาก Vercel (เช่น `https://planos.vercel.app`) ให้ไปอัปเดตค่า `LINE_CALLBACK_URL` ใน Vercel และใน [LINE Developers Console](https://developers.line.biz/) ให้ตรงกันด้วย
 
-## 🌐 Deployment
+---
 
-### Vercel (Recommended)
+## ⏰ ระบบ Backup อัตโนมัติ (Automated Backup)
 
-1. Push your code to GitHub
-2. Import your repository in [Vercel](https://vercel.com)
-3. Add environment variables in Vercel dashboard
-4. Update LINE callback URL to your production domain
-5. Deploy!
+ระบบจะทำการสำรองข้อมูลจาก Supabase ไปยัง Google Sheets อัตโนมัติทุกวัน
+-   **ความถี่**: ทุกวัน เวลา 01.00 น.
+-   **การตั้งค่า**: ผ่านไฟล์ `vercel.json` (Cron Jobs)
+-   **การตรวจสอบ**: ข้อมูลใน Google Sheet จะถูกเขียนทับด้วยข้อมูลล่าสุดเสมอ
 
-### Other Platforms
-
-The app can be deployed to any platform that supports Next.js:
-- Netlify
-- Railway
-- AWS
-- Google Cloud Run
-
-Make sure to:
-- Set all environment variables
-- Update the LINE callback URL
-- Configure the session secret
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+---
 
 ## 📝 License
-
 This project is licensed under the MIT License.
-
-## 🐛 Known Issues
-
-- None at the moment
-
-## 📧 Support
-
-For support, please open an issue in the GitHub repository.
-
-## 🙏 Acknowledgments
-
-- Built with [Next.js](https://nextjs.org/)
-- Authentication via [LINE Login](https://developers.line.biz/en/docs/line-login/)
-- Data storage using [Google Sheets API](https://developers.google.com/sheets/api)
-=======
-# planos
-Project manager system
->>>>>>> a1c1a05a563e5284742de492350e5115f9fe47fc
