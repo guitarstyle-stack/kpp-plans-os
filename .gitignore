@@ -59,3 +59,4 @@ backup/
 .DS_Store
 
 /src/generated/prisma
+env.txt
