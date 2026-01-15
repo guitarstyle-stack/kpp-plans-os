@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # PlanOS - Project Management System
 
 A modern, full-featured project management system built with Next.js, featuring LINE authentication, Google Sheets integration, and comprehensive admin capabilities.
@@ -232,3 +233,7 @@ For support, please open an issue in the GitHub repository.
 - Built with [Next.js](https://nextjs.org/)
 - Authentication via [LINE Login](https://developers.line.biz/en/docs/line-login/)
 - Data storage using [Google Sheets API](https://developers.google.com/sheets/api)
+=======
+# planos
+Project manager system
+>>>>>>> a1c1a05a563e5284742de492350e5115f9fe47fc
