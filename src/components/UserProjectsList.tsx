@@ -98,9 +98,14 @@ export default function UserProjectsList({ userDepartment, userDepartmentId }: {
             const res = await fetch(`/api/projects?page=${page}&limit=${itemsPerPage}`);
             if (res.ok) {
                 const response: ProjectsResponse = await res.json();
-                setProjects(response.data);
-                setTotalPages(response.totalPages);
-                setTotalItems(response.total);
+                if (response && Array.isArray(response.data)) {
+                    setProjects(response.data);
+                    setTotalPages(response.totalPages || 0);
+                    setTotalItems(response.total || 0);
+                } else {
+                    console.error('Invalid projects response structure', response);
+                    setProjects([]);
+                }
             }
         } catch (error) {
             toast.error('ไม่สามารถโหลดข้อมูลได้');

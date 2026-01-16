@@ -23,25 +23,25 @@ export default function ProjectTable({ projects, onEdit, onDelete, onReport, onV
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                    {projects.map((project) => (
-                        <tr key={project.id}>
+                    {Array.isArray(projects) && projects.map((project) => (
+                        <tr key={project?.id || Math.random()}>
                             <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">{project.project_name || project.name}</div>
-                                <div className="text-xs text-gray-500">{project.fiscal_year}</div>
+                                <div className="text-sm font-medium text-gray-900">{project?.project_name || project?.name || 'ไม่ระบุชื่อ'}</div>
+                                <div className="text-xs text-gray-500">{project?.fiscal_year || '-'}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    ${project.status === 'Completed' || project.status === 'ดำเนินการแล้วเสร็จ' ? 'bg-green-100 text-green-800' :
-                                        project.status === 'In Progress' || project.status === 'กำลังดำเนินการ' ? 'bg-yellow-100 text-yellow-800' :
+                                    ${(project?.status === 'Completed' || project?.status === 'ดำเนินการแล้วเสร็จ') ? 'bg-green-100 text-green-800' :
+                                        (project?.status === 'In Progress' || project?.status === 'กำลังดำเนินการ') ? 'bg-yellow-100 text-yellow-800' :
                                             'bg-gray-100 text-gray-800'}`}>
-                                    {project.status}
+                                    {project?.status || 'Unknown'}
                                 </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 max-w-[100px]">
-                                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${project.progress}%` }}></div>
+                                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${project?.progress || 0}%` }}></div>
                                 </div>
-                                <span className="text-xs text-gray-500 mt-1">{project.progress}%</span>
+                                <span className="text-xs text-gray-500 mt-1">{project?.progress || '0'}%</span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div className="flex gap-2">
