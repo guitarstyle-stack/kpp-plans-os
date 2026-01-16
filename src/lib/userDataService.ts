@@ -20,18 +20,18 @@ export interface User {
 function mapDbUserToAppUser(dbUser: any): User {
     return {
         id: dbUser.id,
-        line_user_id: dbUser.username, // Assuming username is used for line_user_id
-        display_name: dbUser.username, // Or add a display_name field to schema if needed
-        picture_url: '', // Schema doesn't currently support picture_url
+        line_user_id: dbUser.username,
+        display_name: dbUser.displayName || dbUser.username,
+        picture_url: dbUser.pictureUrl || '',
         role: dbUser.role as 'admin' | 'user',
-        status: 'active', // Default to active as status isn't in DB schema yet
-        last_login: new Date().toISOString(), // DB createdAt/updatedAt
-        first_name: '', // Not in schema
-        last_name: '', // Not in schema
-        position: '', // Not in schema
+        status: 'active',
+        last_login: dbUser.updatedAt.toISOString(), // Use updatedAt as a proxy for last activity
+        first_name: '',
+        last_name: '',
+        position: '',
         department_id: dbUser.departmentId || undefined,
-        phone: '', // Not in schema
-        email: '', // Not in schema
+        phone: '',
+        email: dbUser.email || '',
     };
 }
 
@@ -45,14 +45,22 @@ export async function getUser(lineUserId: string): Promise<User | null> {
     return mapDbUserToAppUser(user);
 }
 
-export async function registerOrUpdateUser(profile: { userId: string; displayName: string; pictureUrl: string }) {
+export async function registerOrUpdateUser(profile: { userId: string; displayName: string; pictureUrl: string; email?: string }) {
     const existingUser = await prisma.user.findUnique({
         where: { username: profile.userId }
     });
 
     if (existingUser) {
-        // Update logic if fields existed in DB
-        // currently only username/role/dept are in DB.
+        // Update profile info if changed
+        await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+                displayName: profile.displayName,
+                pictureUrl: profile.pictureUrl,
+                // Only update email if provided, don't overwrite with undefined
+                ...(profile.email ? { email: profile.email } : {})
+            }
+        });
 
         try {
             const { logAudit } = await import('./auditService');
@@ -63,16 +71,18 @@ export async function registerOrUpdateUser(profile: { userId: string; displayNam
 
         return {
             role: existingUser.role,
-            status: 'active' // existingUser.status if added to schema
+            status: 'active'
         };
     } else {
         // Create new user
-        // Default password for LINE users - in production consider a better strategy or generic one
         await prisma.user.create({
             data: {
                 username: profile.userId,
                 password: 'LINE_LOGIN_USER',
                 role: 'user',
+                displayName: profile.displayName,
+                pictureUrl: profile.pictureUrl,
+                email: profile.email || null,
             }
         });
 
@@ -83,7 +93,7 @@ export async function registerOrUpdateUser(profile: { userId: string; displayNam
 
         return {
             role: 'user',
-            status: 'active' // Pending logic?
+            status: 'active'
         };
     }
 }

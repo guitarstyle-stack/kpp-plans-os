@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
             userId: userProfile.userId,
             displayName: userProfile.displayName,
             pictureUrl: userProfile.pictureUrl,
+            email: userProfile.email, // Pass email if available
         });
 
         if (status === 'inactive') {
