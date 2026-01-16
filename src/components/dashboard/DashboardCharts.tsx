@@ -96,6 +96,9 @@ export default function DashboardCharts({ projects, plans = [] }: DashboardChart
         const statuses = ['Completed', 'In Progress', 'Not Started', 'Delayed'];
         const statusLabels = ['ดำเนินการเสร็จสิ้น', 'กำลังดำเนินการ', 'ยังไม่ดำเนินการ', 'ล่าช้า'];
 
+        // Colors corresponding to statuses: [Green, Amber, Gray, Red]
+        const statusColors = ['#10B981', '#F59E0B', '#6B7280', '#EF4444'];
+
         const datasets = statuses.map((status, index) => {
             const data = safePlans.map(plan => {
                 // Count projects with this status for this plan
