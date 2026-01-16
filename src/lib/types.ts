@@ -90,6 +90,7 @@ export interface ProjectReport {
     performance: 'บรรลุวัตถุประสงค์' | 'อยู่ระหว่างดำเนินการ' | string;
     issues: string;
     activities?: string; // New field for activities
+    indicatorResults: Record<string, IndicatorResultValue>;
     _rowIndex?: number;
 }
 
@@ -103,19 +104,7 @@ export interface ProjectsResponse {
 
 export type IndicatorResultValue = string | number | null; // More explicit type
 
-export interface ProjectReport {
-    id: string;
-    projectId: string;
-    userId: string;
-    submissionDate: string;
-    progress: number;
-    budgetSpent: number;
-    performance: 'บรรลุวัตถุประสงค์' | 'อยู่ระหว่างดำเนินการ' | string;
-    issues: string;
-    activities?: string;
-    indicatorResults: Record<string, IndicatorResultValue>;
-    _rowIndex?: number;
-}
+
 
 export interface StrategicPlan {
     id: string;
