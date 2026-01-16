@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { getProjectCategories, addProjectCategory } from '@/lib/dataService';
 import { getSession } from '@/lib/auth';
 

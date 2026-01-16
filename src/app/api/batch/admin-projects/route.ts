@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { getProjects } from '@/lib/dataService';
 import { getDepartments } from '@/lib/departmentService';
 import { getProjectCategories } from '@/lib/dataService';

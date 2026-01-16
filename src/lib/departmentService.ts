@@ -8,16 +8,12 @@ export interface Department {
     organization_type?: 'government' | 'private' | 'local_government' | 'civil_society' | 'other';
 }
 
-// Simple in-memory cache to reduce DB hits for frequently accessed static data
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-let cache: Department[] | null = null;
-let lastFetchTime = 0;
+// Simple in-memory cache removed for real-time requirement
+
 
 export async function getDepartments(): Promise<Department[]> {
-    const now = Date.now();
-    if (cache && (now - lastFetchTime < CACHE_TTL)) {
-        return cache;
-    }
+    // Cache check removed
+
 
     try {
         const departments = await prisma.department.findMany({
@@ -34,8 +30,7 @@ export async function getDepartments(): Promise<Department[]> {
             organization_type: undefined // Schema doesn't have this yet, plan to add later if critical
         }));
 
-        cache = mapped;
-        lastFetchTime = now;
+
         return mapped;
     } catch (error) {
         console.error('Failed to fetch departments:', error);
@@ -68,7 +63,7 @@ export async function addDepartment(name: string, organization_type?: string) {
             }
         });
 
-        cache = null;
+
 
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'CREATE', newDept.id, `Department created: ${name}`);
@@ -87,7 +82,7 @@ export async function updateDepartment(id: string, name: string, organization_ty
             data: { name }
         });
 
-        cache = null;
+
 
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'UPDATE', id, `Department updated name to: ${name}`);
@@ -102,7 +97,7 @@ export async function updateDepartment(id: string, name: string, organization_ty
 export async function deleteDepartment(id: string) {
     try {
         await prisma.department.delete({ where: { id } });
-        cache = null;
+
 
         const { logAudit } = await import('./auditService');
         await logAudit('ADMIN', 'DELETE', id, 'Department deleted');

@@ -109,8 +109,8 @@ export default function AdminProjectsManagement() {
 
             if (res.ok) {
                 const { projects: projectsData, departments: deptData } = await res.json();
-                setProjects(projectsData);
-                setDepartments(deptData);
+                setProjects(Array.isArray(projectsData) ? projectsData : []);
+                setDepartments(Array.isArray(deptData) ? deptData : []);
             }
         } catch (error) {
             toast.error('ไม่สามารถโหลดข้อมูลได้');

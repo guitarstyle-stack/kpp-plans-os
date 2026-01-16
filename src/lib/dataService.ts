@@ -1,7 +1,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { Project, Indicator, ProjectReport, ProjectCategory, StrategicPlan, StrategicGoal, StrategicIndicator, ProjectsResponse } from './types';
-import { cache, CacheKeys } from './cache';
+
 
 // Helper to convert Prisma Decimal to number/string as expected by frontend types
 function toString(val: unknown): string {
@@ -16,11 +16,8 @@ function toNumber(val: unknown): number {
 
 export async function getProjects(page = 1, limit = 100): Promise<ProjectsResponse> {
     // Check cache first (cache key needs to include pagination)
-    const cacheKey = `${CacheKeys.PROJECTS}_${page}_${limit}`;
-    const cached = cache.get<ProjectsResponse>(cacheKey);
-    if (cached) {
-        return cached;
-    }
+    // Removed cache for real-time requirement
+
 
     try {
         const skip = (page - 1) * limit;
@@ -71,7 +68,8 @@ export async function getProjects(page = 1, limit = 100): Promise<ProjectsRespon
         };
 
         // Cache results for 1 minute
-        cache.set(cacheKey, response);
+        // cache.set(cacheKey, response);
+
         return response;
     } catch (error) {
         console.error("Error in getProjects:", error);
@@ -106,7 +104,7 @@ export async function addProjectCategory(category: Omit<ProjectCategory, '_rowIn
             }
         });
 
-        cache.invalidate(CacheKeys.CATEGORIES);
+
 
         return {
             id: newCategory.id,
@@ -187,7 +185,7 @@ export async function addProject(project: Omit<Project, '_rowIndex'>) {
         }
     });
 
-    cache.invalidate(CacheKeys.PROJECTS);
+
     return newProject;
 }
 
@@ -229,14 +227,14 @@ export async function updateProject(project: Partial<Project>) {
         data: updateData
     });
 
-    cache.invalidate(CacheKeys.PROJECTS);
+
     return updated; // Caller might expect different shape, but usually just needs ID or success
 }
 
 export async function deleteProject(id: string) {
     try {
         await prisma.project.delete({ where: { id } });
-        cache.invalidate(CacheKeys.PROJECTS);
+
         return { success: true };
     } catch (e) {
         throw new Error('Project not found');
@@ -564,7 +562,7 @@ export async function updateProjectAgency(oldAgencyName: string, newAgencyName: 
         });
 
         console.log(`Updated ${result.count} projects from "${oldAgencyName}" to "${newAgencyName}"`);
-        cache.invalidate(CacheKeys.PROJECTS);
+
 
         const { logAudit } = await import('./auditService');
         await logAudit('SYSTEM', 'UPDATE', 'BATCH', `Updated agency from ${oldAgencyName} to ${newAgencyName} for ${result.count} projects`);
@@ -593,7 +591,7 @@ export async function updateProjectProgress(id: string, progress: string, userId
             }
         });
 
-        cache.invalidate(CacheKeys.PROJECTS);
+
 
         const { logAudit } = await import('./auditService');
         await logAudit(userId, 'UPDATE', id, `Progress updated to ${progress}%`);

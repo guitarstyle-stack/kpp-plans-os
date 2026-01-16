@@ -30,10 +30,13 @@ interface DashboardChartsProps {
 }
 
 export default function DashboardCharts({ projects, plans = [] }: DashboardChartsProps) {
+    const safeProjects = useMemo(() => Array.isArray(projects) ? projects : [], [projects]);
+    const safePlans = useMemo(() => Array.isArray(plans) ? plans : [], [plans]);
+
     // 1. Status Distribution (Pie Chart)
     const statusData = useMemo(() => {
         const statusMap: Record<string, number> = {};
-        projects.forEach(p => {
+        safeProjects.forEach(p => {
             const status = p.status || 'Unknown';
             statusMap[status] = (statusMap[status] || 0) + 1;
         });
@@ -54,12 +57,12 @@ export default function DashboardCharts({ projects, plans = [] }: DashboardChart
                 },
             ],
         };
-    }, [projects]);
+    }, [safeProjects]);
 
     // 2. Budget by Agency (Bar Chart) - Top 5
     const budgetData = useMemo(() => {
         const agencyMap: Record<string, number> = {};
-        projects.forEach(p => {
+        safeProjects.forEach(p => {
             const agency = p.agency || 'Unassigned';
             const cleanBudget = parseFloat(p.budget.replace(/,/g, '')) || 0;
             agencyMap[agency] = (agencyMap[agency] || 0) + cleanBudget;
@@ -79,25 +82,24 @@ export default function DashboardCharts({ projects, plans = [] }: DashboardChart
                 },
             ],
         };
-    }, [projects]);
+    }, [safeProjects]);
 
     // 3. Status by Master Plan (Stacked Bar)
     const planStatusData = useMemo(() => {
         // If no plans loaded or passed, skip/return empty safe
-        if (plans.length === 0) return null;
+        if (safePlans.length === 0) return null;
 
         // Labels = Plan Names
-        const labels = plans.map(p => p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name);
+        const labels = safePlans.map(p => p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name);
 
         // Datasets = Statuses (Completed, In Progress, etc.)
         const statuses = ['Completed', 'In Progress', 'Not Started', 'Delayed'];
-        const statusColors = ['#10B981', '#F59E0B', '#6B7280', '#EF4444'];
         const statusLabels = ['ดำเนินการเสร็จสิ้น', 'กำลังดำเนินการ', 'ยังไม่ดำเนินการ', 'ล่าช้า'];
 
         const datasets = statuses.map((status, index) => {
-            const data = plans.map(plan => {
+            const data = safePlans.map(plan => {
                 // Count projects with this status for this plan
-                return projects.filter(p =>
+                return safeProjects.filter(p =>
                     p.strategicPlanId === plan.id &&
                     (p.status === status || (status === 'Not Started' && p.status === 'ยังไม่ดำเนินการ') || (status === 'Completed' && p.status === 'ดำเนินการแล้วเสร็จ') || (status === 'In Progress' && p.status === 'กำลังดำเนินการ'))
                 ).length;
@@ -115,7 +117,7 @@ export default function DashboardCharts({ projects, plans = [] }: DashboardChart
             labels,
             datasets
         };
-    }, [projects, plans]);
+    }, [safeProjects, safePlans]);
 
     const pieOptions = {
         plugins: {
