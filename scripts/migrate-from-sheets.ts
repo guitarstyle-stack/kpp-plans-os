@@ -96,6 +96,7 @@ async function main() {
             const email = row.get('email');
             const firstName = row.get('first_name');
             const lastName = row.get('last_name');
+            const phoneNumber = row.get('phone_number');
 
             const userData = {
                 id: id,
@@ -103,16 +104,12 @@ async function main() {
                 password: password,
                 role: row.get('role') || 'user',
                 departmentId: deptId,
-                pictureUrl: pictureUrl,
-                displayName: displayName,
-                email: email,
-                // Add first_name/last_name if your schema supports them (schema.prisma check required)
-                // Based on types.ts, User model has these, let's verify schema. 
-                // schema.prisma has pictureUrl, displayName, email. It does NOT have first_name, last_name in the visible parts of Step 509.
-                // Wait, types.ts had first_name/last_name? Let's check schema.
-                // Schema has pictureUrl, displayName, email. No first_name/last_name in Step 509 User model.
-                // Step 509 User model: id, username, password, role, departmentId, pictureUrl, displayName, email, projects, reports.
-                // Let's stick to valid schema fields.
+                pictureUrl,
+                displayName,
+                email,
+                firstName,
+                lastName,
+                phoneNumber
             };
 
             try {
@@ -123,7 +120,10 @@ async function main() {
                         role: row.get('role') || 'user',
                         pictureUrl,
                         displayName,
-                        email
+                        email,
+                        firstName,
+                        lastName,
+                        phoneNumber
                     },
                     create: userData
                 });

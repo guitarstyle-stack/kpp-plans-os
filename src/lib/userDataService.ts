@@ -27,11 +27,11 @@ function mapDbUserToAppUser(dbUser: DbUser): User {
         role: dbUser.role as 'admin' | 'user',
         status: 'active',
         last_login: dbUser.updatedAt.toISOString(), // Use updatedAt as a proxy for last activity
-        first_name: '',
-        last_name: '',
-        position: '',
+        first_name: dbUser.firstName || '',
+        last_name: dbUser.lastName || '',
+        position: '', // Still missing position in schema, ignore for now or add to schema if needed
         department_id: dbUser.departmentId || undefined,
-        phone: '',
+        phone: dbUser.phoneNumber || '',
         email: dbUser.email || '',
     };
 }
@@ -137,7 +137,10 @@ export async function updateUserProfile(lineUserId: string, profile: Partial<Use
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dataToUpdate: any = {};
     if (profile.department_id) dataToUpdate.departmentId = profile.department_id;
-    // if (profile.first_name) ... needs schema update
+    if (profile.first_name) dataToUpdate.firstName = profile.first_name;
+    if (profile.last_name) dataToUpdate.lastName = profile.last_name;
+    if (profile.phone) dataToUpdate.phoneNumber = profile.phone;
+    if (profile.email) dataToUpdate.email = profile.email;
 
     if (Object.keys(dataToUpdate).length > 0) {
         await prisma.user.update({
