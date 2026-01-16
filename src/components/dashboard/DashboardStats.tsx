@@ -7,22 +7,23 @@ interface DashboardStatsProps {
 
 export default function DashboardStats({ projects }: DashboardStatsProps) {
     const stats = useMemo(() => {
-        const totalProjects = projects.length;
+        const safeProjects = Array.isArray(projects) ? projects : [];
+        const totalProjects = safeProjects.length;
 
         // Calculate Total Budget
-        const totalBudget = projects.reduce((sum, p) => {
-            const cleanBudget = p.budget.replace(/,/g, '');
+        const totalBudget = safeProjects.reduce((sum, p) => {
+            const cleanBudget = String(p.budget).replace(/,/g, '');
             return sum + (parseFloat(cleanBudget) || 0);
         }, 0);
 
         // Calculate Average Progress
         const avgProgress = totalProjects > 0
-            ? projects.reduce((sum, p) => sum + (parseFloat(p.progress) || 0), 0) / totalProjects
+            ? safeProjects.reduce((sum, p) => sum + (parseFloat(p.progress) || 0), 0) / totalProjects
             : 0;
 
         // Count Projects by Status
-        const completed = projects.filter(p => p.status === 'Completed' || p.status === 'ดำเนินการแล้วเสร็จ' || p.progress === '100').length;
-        const delayed = projects.filter(p => p.status === 'Delayed' || p.status === 'ล่าช้า').length;
+        const completed = safeProjects.filter(p => p.status === 'Completed' || p.status === 'ดำเนินการแล้วเสร็จ' || p.progress === '100').length;
+        const delayed = safeProjects.filter(p => p.status === 'Delayed' || p.status === 'ล่าช้า').length;
 
         return {
             totalProjects,

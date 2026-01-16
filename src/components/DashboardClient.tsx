@@ -35,15 +35,17 @@ export default function DashboardClient({ initialProjects, user, departmentName 
         } catch (error) { console.error(error); }
     };
 
+    // Filter projects
+    const safeProjects = Array.isArray(initialProjects) ? initialProjects : [];
+
     // Get unique years
     const availableYears = Array.from(new Set(
-        initialProjects.map(p => p.fiscal_year).filter(y => y)
+        safeProjects.map(p => p.fiscal_year).filter(y => y)
     )).sort((a, b) => parseInt(b) - parseInt(a));
 
-    // Filter projects
     let filteredProjects = selectedYear === 'all'
-        ? initialProjects
-        : initialProjects.filter(p => p.fiscal_year === selectedYear);
+        ? safeProjects
+        : safeProjects.filter(p => p.fiscal_year === selectedYear);
 
     if (selectedPlan !== 'all') {
         filteredProjects = filteredProjects.filter(p => p.strategicPlanId === selectedPlan);
