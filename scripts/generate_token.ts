@@ -1,5 +1,5 @@
 
-import { signSession } from '../src/lib/auth.ts';
+import { signSession } from '../src/lib/auth';
 
 async function generate() {
     // Generate a token for a mock admin user
