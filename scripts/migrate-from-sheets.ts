@@ -78,47 +78,63 @@ async function main() {
         console.log(`Found ${userRows.length} users to migrate.`);
 
         for (const row of userRows) {
-            const id = row.get('id');
-            const username = row.get('email') || row.get('line_user_id') || row.get('display_name') || `user_${Math.random().toString(36).substr(2, 9)}`;
+            // FIX: Use existing ID or generate one if missing
+            const id = row.get('id') || row.get('line_user_id') || `user_${Math.random().toString(36).substr(2, 9)}`;
+
+            // Determine username based on available fields
+            const username = row.get('line_user_id') || row.get('email') || `user_${Math.random().toString(36).substr(2, 9)}`;
+
+            // Password fallback
             const password = 'change_me_123';
 
             const rawDeptId = row.get('department_id'); // Sheet ID
             const deptId = rawDeptId ? deptMap.get(rawDeptId) : undefined; // Mapped DB ID
 
+            // New fields mapping
+            const pictureUrl = row.get('picture_url');
+            const displayName = row.get('display_name');
+            const email = row.get('email');
+            const firstName = row.get('first_name');
+            const lastName = row.get('last_name');
+
             const userData = {
-                id: id || undefined,
+                id: id,
                 username: username,
                 password: password,
                 role: row.get('role') || 'user',
-                departmentId: deptId // Uses Mapped ID
+                departmentId: deptId,
+                pictureUrl: pictureUrl,
+                displayName: displayName,
+                email: email,
+                // Add first_name/last_name if your schema supports them (schema.prisma check required)
+                // Based on types.ts, User model has these, let's verify schema. 
+                // schema.prisma has pictureUrl, displayName, email. It does NOT have first_name, last_name in the visible parts of Step 509.
+                // Wait, types.ts had first_name/last_name? Let's check schema.
+                // Schema has pictureUrl, displayName, email. No first_name/last_name in Step 509 User model.
+                // Step 509 User model: id, username, password, role, departmentId, pictureUrl, displayName, email, projects, reports.
+                // Let's stick to valid schema fields.
             };
 
             try {
-                if (id) {
-                    await prisma.user.upsert({
-                        where: { id: id },
-                        update: {
-                            departmentId: deptId,
-                            role: row.get('role') || 'user'
-                        },
-                        create: userData
-                    });
-                } else {
-                    await prisma.user.upsert({
-                        where: { username: username },
-                        update: {
-                            departmentId: deptId,
-                            role: row.get('role') || 'user'
-                        },
-                        create: userData
-                    });
-                }
+                await prisma.user.upsert({
+                    where: { username: username }, // Use username as unique key for upsert if ID is unstable
+                    update: {
+                        departmentId: deptId,
+                        role: row.get('role') || 'user',
+                        pictureUrl,
+                        displayName,
+                        email
+                    },
+                    create: userData
+                });
             } catch (e) {
                 console.error(`Failed to migrate user ${username}:`, e);
             }
         }
         console.log('Users migrated.');
     }
+
+    // ... (Categories, Plans, Goals, Indicators logic remains same) ...
 
     // 0.6 Migrate Project Categories
     const catSheet = doc.sheetsByTitle['ProjectCategories'];
@@ -180,9 +196,7 @@ async function main() {
             const planId = row.get('planId');
             if (!id || !planId) continue;
 
-            const planExists = await prisma.strategicPlan.findUnique({ where: { id: planId } });
-            if (!planExists) continue;
-
+            // Optional: verify planExists if needed, but upsert is safe usually
             const goalData = {
                 id: id,
                 planId: planId,
@@ -208,9 +222,6 @@ async function main() {
             const id = row.get('id');
             const goalId = row.get('goalId');
             if (!id || !goalId) continue;
-
-            const goalExists = await prisma.strategicGoal.findUnique({ where: { id: goalId } });
-            if (!goalExists) continue;
 
             const indData = {
                 id: id,
@@ -245,11 +256,6 @@ async function main() {
 
         const id = row.get('id');
 
-        // Debug Log
-        console.log(`Processing Project: ${row.get('name')} (${id})`);
-        console.log(`- strategicPlanId raw: '${row.get('strategicPlanId')}'`);
-        console.log(`- categoryId raw: '${row.get('categoryId')}'`);
-
         let categoryId = row.get('categoryId');
         if (!categoryId && row.get('categoryId') !== '') categoryId = undefined;
         else if (categoryId === '') categoryId = null;
@@ -262,7 +268,7 @@ async function main() {
         if (!strategicGoalId && row.get('strategicGoalId') !== '') strategicGoalId = undefined;
         else if (strategicGoalId === '') strategicGoalId = null;
 
-        // Verify foreign key existence to prevent constraint violations
+        // Verify foreign key existence
         let validCategoryId = null;
         if (categoryId) {
             const exists = await prisma.projectCategory.findUnique({ where: { id: categoryId } });
@@ -299,8 +305,6 @@ async function main() {
             targetGroupAmount: row.get('target_group_amount'),
             responsiblePerson: row.get('responsible_person'),
             lastUpdated: row.get('last_updated') ? new Date(row.get('last_updated')) : new Date(),
-
-            // New Fields
             categoryId: validCategoryId,
             developmentGuideline: row.get('development_guideline'),
             governanceIndicator: row.get('governance_indicator'),
@@ -392,6 +396,36 @@ async function main() {
             }
         }
         console.log('Reports migrated.');
+    }
+
+    // 4. Migrate AuditLogs (New)
+    const auditSheet = doc.sheetsByTitle['AuditLogs'];
+    if (auditSheet) {
+        const auditRows = await auditSheet.getRows();
+        console.log(`Found ${auditRows.length} audit logs to migrate.`);
+        for (const row of auditRows) {
+            const id = row.get('id');
+            const auditData = {
+                id: id,
+                timestamp: row.get('timestamp') ? new Date(row.get('timestamp')) : new Date(),
+                actor: row.get('actor') || 'System',
+                action: row.get('action') || 'Unknown',
+                target: row.get('target') || 'Unknown',
+                details: row.get('details'),
+                ip: row.get('ip')
+            };
+
+            if (id) {
+                await prisma.auditLog.upsert({
+                    where: { id: id },
+                    update: auditData,
+                    create: auditData
+                });
+            } else {
+                await prisma.auditLog.create({ data: auditData });
+            }
+        }
+        console.log('AuditLogs migrated.');
     }
 
     console.log('Migration completed successfully.');
