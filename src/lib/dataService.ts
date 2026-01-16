@@ -4,11 +4,11 @@ import { Project, Indicator, ProjectReport, ProjectCategory, StrategicPlan, Stra
 import { cache, CacheKeys } from './cache';
 
 // Helper to convert Prisma Decimal to number/string as expected by frontend types
-function toString(val: any): string {
+function toString(val: unknown): string {
     return val?.toString() || '';
 }
 
-function toNumber(val: any): number {
+function toNumber(val: unknown): number {
     return Number(val) || 0;
 }
 
@@ -194,6 +194,7 @@ export async function addProject(project: Omit<Project, '_rowIndex'>) {
 export async function updateProject(project: Partial<Project>) {
     if (!project.id) throw new Error('Project ID required');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
         lastUpdated: new Date(),
     };

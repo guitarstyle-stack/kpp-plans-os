@@ -16,7 +16,7 @@ interface ReportModalProps {
         activities: string;
         indicatorResults: Record<string, string>;
     };
-    onReportDataChange: (data: any) => void;
+    onReportDataChange: (data: ReportModalProps['reportData']) => void;
     projectIndicators: Indicator[];
 }
 

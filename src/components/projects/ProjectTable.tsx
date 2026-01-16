@@ -23,8 +23,8 @@ export default function ProjectTable({ projects, onEdit, onDelete, onReport, onV
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                    {Array.isArray(projects) && projects.map((project) => (
-                        <tr key={project?.id || Math.random()}>
+                    {Array.isArray(projects) && projects.map((project, index) => (
+                        <tr key={project?.id || index}>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">{project?.project_name || project?.name || 'ไม่ระบุชื่อ'}</div>
                                 <div className="text-xs text-gray-500">{project?.fiscal_year || '-'}</div>

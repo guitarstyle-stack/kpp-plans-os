@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { User as DbUser } from '@prisma/client';
 
 export interface User {
     id: string;
@@ -17,7 +18,7 @@ export interface User {
 }
 
 // Helper to map DB user to App User interface
-function mapDbUserToAppUser(dbUser: any): User {
+function mapDbUserToAppUser(dbUser: DbUser): User {
     return {
         id: dbUser.id,
         line_user_id: dbUser.username,
@@ -133,6 +134,7 @@ export async function updateUserStatus(lineUserId: string, newStatus: 'active' |
 // This function needs fields not present in current schema (first_name, last_name, etc.)
 // We will update what we can (departmentId) and ignore the rest for now, or you should update schema.
 export async function updateUserProfile(lineUserId: string, profile: Partial<User>) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dataToUpdate: any = {};
     if (profile.department_id) dataToUpdate.departmentId = profile.department_id;
     // if (profile.first_name) ... needs schema update

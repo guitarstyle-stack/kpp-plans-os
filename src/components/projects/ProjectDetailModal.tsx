@@ -17,28 +17,28 @@ export default function ProjectDetailModal({ isOpen, onClose, project }: Project
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        const fetchDetails = async () => {
+            if (!project) return;
+            setLoading(true);
+            try {
+                const [repRes, indRes] = await Promise.all([
+                    fetch(`/api/reports?projectId=${project.id}`), // Expecting GET reports endpoint
+                    fetch(`/api/indicators?projectId=${project.id}`)
+                ]);
+
+                if (repRes.ok) setReports(await repRes.json());
+                if (indRes.ok) setIndicators(await indRes.json());
+            } catch (error) {
+                console.error("Failed to fetch details", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (project && isOpen) {
             fetchDetails();
         }
     }, [project, isOpen]);
-
-    const fetchDetails = async () => {
-        if (!project) return;
-        setLoading(true);
-        try {
-            const [repRes, indRes] = await Promise.all([
-                fetch(`/api/reports?projectId=${project.id}`), // Expecting GET reports endpoint
-                fetch(`/api/indicators?projectId=${project.id}`)
-            ]);
-
-            if (repRes.ok) setReports(await repRes.json());
-            if (indRes.ok) setIndicators(await indRes.json());
-        } catch (error) {
-            console.error("Failed to fetch details", error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     if (!project) return null;
 
