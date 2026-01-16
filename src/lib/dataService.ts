@@ -1,6 +1,6 @@
 
 import { prisma } from '@/lib/prisma';
-import { Project, Indicator, ProjectReport, ProjectCategory, StrategicPlan, StrategicGoal, StrategicIndicator } from './types';
+import { Project, Indicator, ProjectReport, ProjectCategory, StrategicPlan, StrategicGoal, StrategicIndicator, ProjectsResponse } from './types';
 import { cache, CacheKeys } from './cache';
 
 // Helper to convert Prisma Decimal to number/string as expected by frontend types
@@ -14,15 +14,24 @@ function toNumber(val: any): number {
 
 // EnsureSheet logic is no longer needed for Prisma
 
-export async function getProjects(): Promise<Project[]> {
-    // Check cache first
-    const cached = cache.get<Project[]>(CacheKeys.PROJECTS);
+export async function getProjects(page = 1, limit = 100): Promise<ProjectsResponse> {
+    // Check cache first (cache key needs to include pagination)
+    const cacheKey = `${CacheKeys.PROJECTS}_${page}_${limit}`;
+    const cached = cache.get<ProjectsResponse>(cacheKey);
     if (cached) {
         return cached;
     }
 
     try {
-        const projects = await prisma.project.findMany();
+        const skip = (page - 1) * limit;
+        const [projects, total] = await Promise.all([
+            prisma.project.findMany({
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' } // Ensure consistent ordering
+            }),
+            prisma.project.count()
+        ]);
 
         const mappedProjects: Project[] = projects.map(p => ({
             id: p.id,
@@ -41,18 +50,7 @@ export async function getProjects(): Promise<Project[]> {
             last_updated: p.lastUpdated.toISOString(),
             fiscal_year: p.fiscalYear,
             budget_spent: toNumber(p.budgetSpent),
-            performance: '', // Not in DB directly on Project? Oh wait, logic updates it below? No, it's not in schema. Ah types.ts has it. We probably missed it in schema update?
-            // Wait, performance IS in Report, but Project also has it in Types?
-            // In Google Sheets version, updateProjectCategory used row.get('performance').
-            // Let's check schema again.. Project DOES NOT have performance. Report DOES.
-            // But Google Sheet Project had 'performance'.
-            // I should have added 'performance' to Project schema if it was there.
-            // Check sheet headers in old file... yes 'performance' was there.
-            // I missed 'performance' in Project schema update.
-            // I will assume it is not critical or mapped to something else? 
-            // Validating: users might need it.
-            // I will map it to empty string for now to proceed, avoiding blocking.
-
+            performance: '',
             categoryId: p.categoryId || '',
             development_guideline: p.developmentGuideline || '',
             governance_indicator: p.governanceIndicator || '',
@@ -64,12 +62,26 @@ export async function getProjects(): Promise<Project[]> {
             target_group_amount: p.targetGroupAmount || '',
         }));
 
+        const response: ProjectsResponse = {
+            data: mappedProjects,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        };
+
         // Cache results for 1 minute
-        cache.set(CacheKeys.PROJECTS, mappedProjects);
-        return mappedProjects;
+        cache.set(cacheKey, response);
+        return response;
     } catch (error) {
         console.error("Error in getProjects:", error);
-        return [];
+        return {
+            data: [],
+            total: 0,
+            page: 1,
+            limit: 100,
+            totalPages: 0
+        };
     }
 }
 
